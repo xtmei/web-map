@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>斯大林格勒战役动态作战图（北约符号）</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <style>
+    :root {
+      --bg: #070b16;
+      --panel: rgba(11, 18, 32, 0.82);
+      --border: rgba(148, 163, 184, 0.28);
+      --text: #e2e8f0;
+      --sub: #94a3b8;
+      --accent: #38bdf8;
+      --axis: #f87171;
+      --soviet: #4ade80;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at 10% 10%, #0f172a 0%, var(--bg) 55%);
+      color: var(--text);
+      font-family: "Noto Sans SC", "Microsoft YaHei", system-ui, sans-serif;
+    }
+    .layout {
+      width: min(1380px, 96vw);
+      margin: 18px auto;
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 16px;
+      min-height: calc(100vh - 36px);
+    }
+    .panel {
+      backdrop-filter: blur(14px);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35);
+    }
+    .sidebar { padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+    h1 { margin: 0; font-size: 1.25rem; }
+    .desc { margin: 0; color: var(--sub); font-size: 0.9rem; line-height: 1.5; }
+    .status strong { color: #f8fafc; font-size: 1.02rem; }
+    .status p { margin: 6px 0 0; color: var(--sub); line-height: 1.45; }
+    .badge-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .badge {
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      border: 1px solid var(--border);
+      color: var(--sub);
+      background: rgba(15, 23, 42, 0.6);
+    }
+    .legend { display: grid; gap: 8px; }
+    .legend-item { display: flex; align-items: center; gap: 8px; color: var(--sub); font-size: 0.85rem; }
+    .swatch { width: 16px; height: 4px; border-radius: 12px; }
+    .map-panel {
+      display: grid;
+      grid-template-rows: 1fr auto;
+      overflow: hidden;
+    }
+    #map { min-height: 620px; width: 100%; }
+    .controls {
+      padding: 12px 16px 18px;
+      border-top: 1px solid var(--border);
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 12px;
+      align-items: center;
+    }
+    button {
+      border: 0;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: white;
+      font-weight: 600;
+      padding: 10px 16px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    input[type='range'] { width: 100%; }
+    .tick { color: var(--sub); min-width: 120px; text-align: right; font-size: 0.85rem; }
+    .unit-tree {
+      border-top: 1px dashed var(--border);
+      padding-top: 10px;
+      max-height: 34vh;
+      overflow: auto;
+    }
+    .unit-tree h3 { margin: 0 0 8px; font-size: 0.98rem; }
+    .tree-list { margin: 0; padding-left: 16px; color: var(--sub); font-size: 0.85rem; line-height: 1.4; }
+    .tree-list strong { color: #f8fafc; }
+    .leaflet-popup-content { min-width: 280px; }
+    .popup-title { font-weight: 700; margin-bottom: 6px; }
+    .popup-meta { color: #475569; font-size: 0.84rem; margin-bottom: 8px; }
+    .popup-block { font-size: 0.84rem; line-height: 1.4; }
+    @media (max-width: 1020px) {
+      .layout { grid-template-columns: 1fr; }
+      #map { min-height: 500px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="panel sidebar">
+      <h1>斯大林格勒战役动态地图</h1>
+      <p class="desc">使用免费高精度底图（Carto + OpenStreetMap 数据）叠加北约军标（NATO APP-6 风格），以月为单位展示 1942-07 至 1943-02 战局演进。</p>
+      <div class="badge-row">
+        <span class="badge">免费底图</span>
+        <span class="badge">北约符号</span>
+        <span class="badge">月度进度</span>
+        <span class="badge">可点开单位详情</span>
+      </div>
+      <div class="status">
+        <strong id="dateLabel">1942-07</strong>
+        <p id="eventLabel">德军向顿河与伏尔加河之间推进，外围战线拉长。</p>
+      </div>
+      <div class="legend">
+        <div class="legend-item"><i class="swatch" style="background:var(--axis)"></i>轴心国（德军）战斗群</div>
+        <div class="legend-item"><i class="swatch" style="background:var(--soviet)"></i>苏军战斗群</div>
+      </div>
+      <section class="unit-tree">
+        <h3>当前聚焦单位编制</h3>
+        <ul id="unitTree" class="tree-list"></ul>
+      </section>
+    </aside>
+
+    <section class="panel map-panel">
+      <div id="map" aria-label="Battle map"></div>
+      <div class="controls">
+        <button id="playBtn" type="button">▶ 播放</button>
+        <input id="timeline" type="range" min="0" max="7" step="1" value="0" />
+        <div id="tickLabel" class="tick">阶段 1 / 8</div>
+      </div>
+    </section>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="https://cdn.jsdelivr.net/npm/milsymbol@3.1.0/dist/milsymbol.min.js"></script>
+  <script>
+    const monthFrames = [
+      {
+        date: '1942-07',
+        event: '德军向顿河与伏尔加河之间推进，外围战线拉长。',
+        focus: '第6集团军',
+        units: [
+          { side: 'axis', name: '德军第6集团军', sidc: 'SFGPUCI----K---', lat: 49.1, lng: 43.6, detail: axisDetail('第6集团军', '保卢斯', '主攻方向：卡拉奇') },
+          { side: 'axis', name: '德军第4装甲集团军', sidc: 'SFGPUCR----K---', lat: 48.9, lng: 44.5, detail: axisDetail('第4装甲集团军', '霍特', '机动突击：南翼牵制') },
+          { side: 'soviet', name: '苏军第62集团军', sidc: 'SFGPUCI----K---', lat: 48.72, lng: 44.49, detail: sovietDetail('第62集团军', '洛帕京', '沿伏尔加右岸布防') },
+          { side: 'soviet', name: '苏军第64集团军', sidc: 'SFGPUCI----K---', lat: 48.58, lng: 44.42, detail: sovietDetail('第64集团军', '舒米洛夫', '构筑南部防御带') }
+        ]
+      },
+      {
+        date: '1942-08',
+        event: '德军装甲尖兵逼近城区，斯大林格勒外围防线遭猛烈冲击。',
+        focus: '第4装甲集团军',
+        units: [
+          { side: 'axis', name: '德军第6集团军', sidc: 'SFGPUCI----K---', lat: 48.95, lng: 44.05, detail: axisDetail('第6集团军', '保卢斯', '城区西北方向突入') },
+          { side: 'axis', name: '德军第4装甲集团军', sidc: 'SFGPUCR----K---', lat: 48.75, lng: 44.2, detail: axisDetail('第4装甲集团军', '霍特', '南部楔入推进') },
+          { side: 'soviet', name: '苏军第62集团军', sidc: 'SFGPUCI----K---', lat: 48.73, lng: 44.52, detail: sovietDetail('第62集团军', '丘伊科夫(后任)', '市区纵深迟滞') },
+          { side: 'soviet', name: '苏军近卫第13师', sidc: 'SFGPUCI----K---', lat: 48.74, lng: 44.57, detail: battalionDetail('近卫第13步兵师', '罗季姆采夫', '夜渡伏尔加后投入中央渡口') }
+        ]
+      },
+      {
+        date: '1942-09',
+        event: '巷战白热化，工厂区与火车站反复易手。',
+        focus: '苏军第62集团军',
+        units: [
+          { side: 'axis', name: '德军LI军', sidc: 'SFGPUCI----K---', lat: 48.77, lng: 44.43, detail: battalionDetail('LI军', '赛德利茨-库尔茨巴赫', '向马马耶夫岗突进') },
+          { side: 'axis', name: '德军第71步兵师', sidc: 'SFGPUCI----K---', lat: 48.74, lng: 44.47, detail: battalionDetail('第71步兵师', '哈特曼', '火车站及中心城区争夺') },
+          { side: 'soviet', name: '苏军第62集团军', sidc: 'SFGPUCI----K---', lat: 48.72, lng: 44.55, detail: sovietDetail('第62集团军', '丘伊科夫', '依托伏尔加岸构建节点防御') },
+          { side: 'soviet', name: '苏军第284步兵师', sidc: 'SFGPUCI----K---', lat: 48.79, lng: 44.58, detail: battalionDetail('第284步兵师', '巴季乌克', '狙击与楼群防御作战') }
+        ]
+      },
+      {
+        date: '1942-10',
+        event: '德军向拖拉机厂、红十月工厂发动高强度突击。',
+        focus: '工厂区防御群',
+        units: [
+          { side: 'axis', name: '德军第14装甲师', sidc: 'SFGPUCR----K---', lat: 48.81, lng: 44.49, detail: battalionDetail('第14装甲师', '林德曼', '工厂区纵深突破') },
+          { side: 'axis', name: '德军第305步兵师', sidc: 'SFGPUCI----K---', lat: 48.78, lng: 44.46, detail: battalionDetail('第305步兵师', '施泰纳', '贴近伏尔加岸压缩苏军') },
+          { side: 'soviet', name: '苏军第37近卫师', sidc: 'SFGPUCI----K---', lat: 48.82, lng: 44.56, detail: battalionDetail('第37近卫师', '若罗夫', '拖拉机厂阵地死守') },
+          { side: 'soviet', name: '苏军第95步兵师', sidc: 'SFGPUCI----K---', lat: 48.76, lng: 44.54, detail: battalionDetail('第95步兵师', '戈罗霍夫', '工厂居民区逐屋争夺') }
+        ]
+      },
+      {
+        date: '1942-11',
+        event: '“天王星行动”启动，苏军从南北两翼合围第6集团军。',
+        focus: '西南方面军合围群',
+        units: [
+          { side: 'axis', name: '德军第6集团军', sidc: 'SFGPUCI----K---', lat: 48.74, lng: 44.46, detail: axisDetail('第6集团军', '保卢斯', '城区内被合围风险急升') },
+          { side: 'axis', name: '罗马尼亚第3集团军', sidc: 'SFGPUCI----K---', lat: 49.35, lng: 43.95, detail: battalionDetail('罗马尼亚第3集团军', '杜米特雷斯库', '北翼被突破') },
+          { side: 'soviet', name: '苏军第5坦克集团军', sidc: 'SFGPUCR----K---', lat: 49.22, lng: 43.72, detail: sovietDetail('第5坦克集团军', '罗特米斯特罗夫', '北翼穿插') },
+          { side: 'soviet', name: '苏军第51集团军', sidc: 'SFGPUCI----K---', lat: 48.3, lng: 44.1, detail: sovietDetail('第51集团军', '特鲁法诺夫', '南翼突击') }
+        ]
+      },
+      {
+        date: '1942-12',
+        event: '曼施坦因解围行动受阻，包围圈趋于稳固。',
+        focus: '包围圈封锁群',
+        units: [
+          { side: 'axis', name: '德军第4装甲集团军', sidc: 'SFGPUCR----K---', lat: 48.35, lng: 44.35, detail: axisDetail('第4装甲集团军', '霍特', '冬季风暴行动北推') },
+          { side: 'axis', name: '德军第57装甲军', sidc: 'SFGPUCR----K---', lat: 48.44, lng: 44.23, detail: battalionDetail('第57装甲军', '基尔希纳', '试图打通走廊') },
+          { side: 'soviet', name: '苏军第2近卫集团军', sidc: 'SFGPUCI----K---', lat: 48.49, lng: 44.3, detail: sovietDetail('第2近卫集团军', '马利诺夫斯基', '阻击解围部队') },
+          { side: 'soviet', name: '苏军第21集团军', sidc: 'SFGPUCI----K---', lat: 48.95, lng: 44.1, detail: sovietDetail('第21集团军', '奇斯佳科夫', '加固北半包围圈') }
+        ]
+      },
+      {
+        date: '1943-01',
+        event: '“指环行动”分割围困德军，机场与补给节点持续丧失。',
+        focus: '指环行动突击群',
+        units: [
+          { side: 'axis', name: '德军第6集团军（北部口袋）', sidc: 'SFGPUCI----K---', lat: 48.86, lng: 44.45, detail: axisDetail('第6集团军北群', '施特雷克', '补给与弹药濒临枯竭') },
+          { side: 'axis', name: '德军第6集团军（南部口袋）', sidc: 'SFGPUCI----K---', lat: 48.66, lng: 44.48, detail: axisDetail('第6集团军南群', '保卢斯', '防区被分割') },
+          { side: 'soviet', name: '苏军第65集团军', sidc: 'SFGPUCI----K---', lat: 48.82, lng: 44.34, detail: sovietDetail('第65集团军', '巴托夫', '北部压缩') },
+          { side: 'soviet', name: '苏军第24集团军', sidc: 'SFGPUCI----K---', lat: 48.77, lng: 44.4, detail: sovietDetail('第24集团军', '加拉宁', '中部切割') }
+        ]
+      },
+      {
+        date: '1943-02',
+        event: '德军残部投降，斯大林格勒会战结束。',
+        focus: '最终清剿群',
+        units: [
+          { side: 'axis', name: '德军残余战斗群', sidc: 'SFGPUCI----K---', lat: 48.71, lng: 44.5, detail: axisDetail('残余战斗群', '各军残部', '组织性抵抗终止') },
+          { side: 'soviet', name: '苏军第62集团军', sidc: 'SFGPUCI----K---', lat: 48.72, lng: 44.56, detail: sovietDetail('第62集团军', '丘伊科夫', '城区收复完成') },
+          { side: 'soviet', name: '苏军第64集团军', sidc: 'SFGPUCI----K---', lat: 48.65, lng: 44.46, detail: sovietDetail('第64集团军', '舒米洛夫', '南部扫荡') }
+        ]
+      }
+    ];
+
+    function axisDetail(army, commander, role) {
+      return {
+        armyGroup: 'B集团军群',
+        army,
+        corps: '第XI军 / 第XIV装甲军',
+        division: '第71步兵师 / 第14装甲师',
+        regiment: '第194掷弹兵团 / 第36装甲团',
+        battalion: '第194团第2营 / 第36团第1营',
+        commander,
+        role
+      };
+    }
+
+    function sovietDetail(army, commander, role) {
+      return {
+        front: '顿河方面军 / 斯大林格勒方面军',
+        army,
+        corps: '近卫步兵军 / 坦克军',
+        division: '近卫第13师 / 第284步兵师',
+        regiment: '第39近卫团 / 第1047步兵团',
+        battalion: '第39团第1营 / 第1047团第2营',
+        commander,
+        role
+      };
+    }
+
+    function battalionDetail(army, commander, role) {
+      return {
+        front: '战役直属集群',
+        army,
+        corps: '军级特遣队',
+        division: '主战师级单位',
+        regiment: '主战团级单位',
+        battalion: '前沿营战斗队',
+        commander,
+        role
+      };
+    }
+
+    const map = L.map('map', { zoomControl: true }).setView([48.73, 44.52], 9);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+      maxZoom: 19
+    }).addTo(map);
+
+    const markersLayer = L.layerGroup().addTo(map);
+    const timeline = document.getElementById('timeline');
+    const tickLabel = document.getElementById('tickLabel');
+    const dateLabel = document.getElementById('dateLabel');
+    const eventLabel = document.getElementById('eventLabel');
+    const playBtn = document.getElementById('playBtn');
+    const unitTree = document.getElementById('unitTree');
+
+    let currentIndex = 0;
+    let playing = false;
+    let timer = null;
+
+    function makeIcon(unit) {
+      const color = unit.side === 'axis' ? '#f87171' : '#4ade80';
+      const symbol = new ms.Symbol(unit.sidc, {
+        size: 36,
+        frame: true,
+        fill: true,
+        monoColor: color,
+        infoFields: false,
+        uniqueDesignation: unit.name
+      });
+      return L.divIcon({
+        html: `<div style="display:flex;flex-direction:column;align-items:center;gap:3px;filter:drop-shadow(0 2px 8px rgba(0,0,0,.65));"><div>${symbol.asSVG()}</div><div style="font-size:11px;color:${color};font-weight:700;line-height:1.1;background:rgba(2,6,23,.62);padding:2px 6px;border-radius:999px;border:1px solid rgba(148,163,184,.25)">${unit.name}</div></div>`,
+        className: '',
+        iconSize: [150, 62],
+        iconAnchor: [75, 31]
+      });
+    }
+
+    function detailHtml(unit) {
+      const d = unit.detail;
+      return `
+        <div class="popup-title">${unit.name}</div>
+        <div class="popup-meta">指挥官：${d.commander}</div>
+        <div class="popup-block">
+          <div>战役角色：${d.role}</div>
+          <div>集团军级：${d.army || '-'}</div>
+          <div>军级：${d.corps}</div>
+          <div>师级：${d.division}</div>
+          <div>团级：${d.regiment}</div>
+          <div>营级：${d.battalion}</div>
+        </div>
+      `;
+    }
+
+    function renderTree(unit) {
+      const d = unit.detail;
+      unitTree.innerHTML = `
+        <li><strong>聚焦单位：</strong>${unit.name}</li>
+        <li><strong>指挥官：</strong>${d.commander}</li>
+        <li><strong>集团军：</strong>${d.army || '-'}</li>
+        <li><strong>军：</strong>${d.corps}</li>
+        <li><strong>师：</strong>${d.division}</li>
+        <li><strong>团：</strong>${d.regiment}</li>
+        <li><strong>营：</strong>${d.battalion}</li>
+      `;
+    }
+
+    function renderFrame(index) {
+      const frame = monthFrames[index];
+      dateLabel.textContent = frame.date;
+      eventLabel.textContent = frame.event;
+      tickLabel.textContent = `阶段 ${index + 1} / ${monthFrames.length}`;
+      timeline.value = String(index);
+
+      markersLayer.clearLayers();
+      frame.units.forEach((unit, idx) => {
+        const marker = L.marker([unit.lat, unit.lng], { icon: makeIcon(unit), keyboard: true }).addTo(markersLayer);
+        marker.bindPopup(detailHtml(unit));
+        if (idx === 0) {
+          renderTree(unit);
+        }
+        marker.on('click', () => renderTree(unit));
+      });
+    }
+
+    function stopPlay() {
+      playing = false;
+      if (timer) clearInterval(timer);
+      playBtn.textContent = '▶ 播放';
+    }
+
+    function startPlay() {
+      playing = true;
+      playBtn.textContent = '⏸ 暂停';
+      timer = setInterval(() => {
+        currentIndex = (currentIndex + 1) % monthFrames.length;
+        renderFrame(currentIndex);
+      }, 1800);
+    }
+
+    playBtn.addEventListener('click', () => {
+      if (playing) {
+        stopPlay();
+      } else {
+        startPlay();
+      }
+    });
+
+    timeline.addEventListener('input', (event) => {
+      currentIndex = Number(event.target.value);
+      renderFrame(currentIndex);
+      if (playing) stopPlay();
+    });
+
+    renderFrame(currentIndex);
+  </script>
+</body>
+</html>
