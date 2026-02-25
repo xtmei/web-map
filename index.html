@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>斯大林格勒：钢铁战线指挥图</title>
   <script src="https://cdn.jsdelivr.net/npm/p5@1.9.4/lib/p5.min.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
   <style>
     :root {
       color-scheme: dark;
@@ -396,6 +397,30 @@
         font-size: 12px;
       }
     }
+
+    #mapWorkbench {
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      display: none;
+      flex-direction: column;
+      background: rgba(10, 8, 6, 0.96);
+      border-top: 1px solid var(--line);
+    }
+    #mapWorkbench.open { display: flex; }
+    .mapToolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 10px;
+      border-bottom: 1px solid var(--line-2);
+      background: rgba(28, 22, 17, 0.92);
+      font-size: 12px;
+      pointer-events: auto;
+    }
+    #mapStatus { color: var(--sub); }
+    #leafletMap { flex: 1; min-height: 0; }
   </style>
 </head>
 <body class="compact-ui">
@@ -436,6 +461,7 @@
       <button class="btn mini" id="btnScenarioApply">载入战役</button>
       <button class="btn mini active" id="btnCompact">紧凑UI</button>
       <button class="btn mini" id="btnFocusMap">地图聚焦</button>
+      <button class="btn mini" id="btnHiResMap">高清地图</button>
       <button class="btn mini active" id="btnToggleWar">战况窗</button>
       <button class="btn mini active" id="btnToggleUnits">单位窗</button>
     </div>
@@ -462,8 +488,20 @@
     </footer>
   </div>
 
+  <section id="mapWorkbench" aria-label="高清地图工作台">
+    <div class="mapToolbar">
+      <strong>历史底图 / GeoJSON / Hex Grid</strong>
+      <span id="mapStatus">加载中...</span>
+      <button class="btn mini" id="btnCloseHiResMap">返回兵棋界面</button>
+    </div>
+    <div id="leafletMap"></div>
+  </section>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="https://unpkg.com/leaflet-iiif@2.0.1"></script>
   <script src="./data/map_scenarios.js"></script>
   <script src="./data/unit_scenarios.js"></script>
   <script src="./app.js"></script>
+  <script type="module" src="./src/map/mapRuntime.js"></script>
 </body>
 </html>

@@ -1,0 +1,15 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {"name": "Mamayev Kurgan", "elevation_m": 102},
+      "geometry": {"type": "Point", "coordinates": [44.54,48.742]}
+    },
+    {
+      "type": "Feature",
+      "properties": {"name": "River Terrace", "elevation_m": 32},
+      "geometry": {"type": "Point", "coordinates": [44.50,48.71]}
+    }
+  ]
+}

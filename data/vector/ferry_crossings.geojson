@@ -1,0 +1,15 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {"name": "Ferry North", "capacity": 2},
+      "geometry": {"type": "Point", "coordinates": [44.53,48.74]}
+    },
+    {
+      "type": "Feature",
+      "properties": {"name": "Ferry South", "capacity": 3},
+      "geometry": {"type": "Point", "coordinates": [44.54,48.70]}
+    }
+  ]
+}

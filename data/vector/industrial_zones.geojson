@@ -1,0 +1,21 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {"name": "Tractor Factory", "terrain": "INDUSTRY", "cover": 3},
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[44.56,48.735],[44.575,48.735],[44.575,48.728],[44.56,48.728],[44.56,48.735]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {"name": "Red October", "terrain": "INDUSTRY", "cover": 3},
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[44.58,48.73],[44.598,48.73],[44.598,48.724],[44.58,48.724],[44.58,48.73]]]
+      }
+    }
+  ]
+}

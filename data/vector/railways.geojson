@@ -1,0 +1,13 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {"name": "Volga Rail Corridor"},
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [[44.43,48.69],[44.49,48.70],[44.56,48.705],[44.62,48.71]]
+      }
+    }
+  ]
+}
