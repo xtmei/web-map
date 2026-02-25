@@ -351,6 +351,7 @@ const camera = { x: 0, y: 0, zoom: 1 };
 const gesture = {
   isPanning: false,
   isPinch: false,
+  uiCaptured: false,
   moved: false,
   startX: 0,
   startY: 0,
@@ -872,6 +873,14 @@ function mouseWheel(event) {
 function touchStarted() {
   suppressMouseUntil = millis() + 450;
   if (!touches.length) return false;
+  if (touchesOverUI()) {
+    gesture.uiCaptured = true;
+    gesture.isPanning = false;
+    gesture.isPinch = false;
+    gesture.moved = false;
+    return true;
+  }
+  gesture.uiCaptured = false;
   if (touches.length >= 2) {
     startPinch(touches[0], touches[1]);
   } else {
@@ -882,6 +891,16 @@ function touchStarted() {
 
 function touchMoved() {
   suppressMouseUntil = millis() + 450;
+  if (gesture.uiCaptured) {
+    if (!touches.length) gesture.uiCaptured = false;
+    return true;
+  }
+  if (touchesOverUI()) {
+    gesture.uiCaptured = true;
+    gesture.isPanning = false;
+    gesture.isPinch = false;
+    return true;
+  }
   if (touches.length >= 2) {
     const a = touches[0];
     const b = touches[1];
@@ -914,6 +933,10 @@ function touchMoved() {
 
 function touchEnded() {
   suppressMouseUntil = millis() + 450;
+  if (gesture.uiCaptured) {
+    if (!touches.length) gesture.uiCaptured = false;
+    return true;
+  }
   if (touches.length >= 2) {
     startPinch(touches[0], touches[1]);
     return false;
@@ -926,6 +949,7 @@ function touchEnded() {
     const shouldTap = !gesture.moved && !gesture.isPinch;
     const tapX = gesture.lastX;
     const tapY = gesture.lastY;
+    gesture.uiCaptured = false;
     gesture.isPanning = false;
     gesture.isPinch = false;
     gesture.moved = false;
@@ -961,6 +985,14 @@ function midpoint(a, b) {
 
 function dist2D(x1, y1, x2, y2) {
   return Math.hypot(x1 - x2, y1 - y2);
+}
+
+function touchesOverUI() {
+  if (!touches || !touches.length) return false;
+  for (const t of touches) {
+    if (isPointerOverUI(t.x, t.y)) return true;
+  }
+  return false;
 }
 
 function zoomTo(nextZoom, sx, sy) {
@@ -1259,7 +1291,17 @@ function setMode(nextMode) {
 
 function bindUI() {
   document.addEventListener('contextmenu', e => e.preventDefault());
-  document.getElementById('startBtn').addEventListener('click', startGame);
+  const startBtn = document.getElementById('startBtn');
+  const handleStartInteraction = e => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (!isStartOverlayVisible()) return;
+    startGame();
+  };
+  startBtn.addEventListener('click', handleStartInteraction);
+  startBtn.addEventListener('touchend', handleStartInteraction, { passive: false });
   document.querySelectorAll('[data-mode]').forEach(btn => {
     btn.addEventListener('click', () => {
       setMode(btn.dataset.mode);
