@@ -3,425 +3,688 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>斯大林格勒战役动态作战图（北约符号）</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <title>斯大林格勒：战术指挥官（p5.js）</title>
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.9.4/lib/p5.min.js"></script>
   <style>
     :root {
-      --bg: #060913;
-      --panel: rgba(12, 20, 38, 0.78);
-      --panel-strong: rgba(10, 16, 30, 0.92);
-      --border: rgba(148, 163, 184, 0.22);
-      --text: #e8eefc;
-      --sub: #9fb0cc;
-      --accent: #67d4ff;
-      --axis: #f87171;
-      --soviet: #4ade80;
+      color-scheme: dark;
+      --bg: #070b15;
+      --panel: #111a2b;
+      --panel2: #0d1423;
+      --line: #25344f;
+      --text: #e6edf9;
+      --sub: #9fb2d6;
+      --axis: #e8c66a;
+      --sov: #e46a6a;
+      --ok: #56d364;
+      --warn: #ffb86b;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      background:
-        radial-gradient(60% 80% at 2% 2%, rgba(96, 165, 250, 0.14), transparent 70%),
-        radial-gradient(55% 65% at 96% 96%, rgba(45, 212, 191, 0.12), transparent 72%),
-        linear-gradient(155deg, #081022 0%, var(--bg) 55%);
-      color: var(--text);
+      background: radial-gradient(circle at 20% 0%, #0f1d36, var(--bg) 45%);
       font-family: "Noto Sans SC", "Microsoft YaHei", system-ui, sans-serif;
-      letter-spacing: 0.015em;
+      color: var(--text);
+      overflow: hidden;
     }
-    .layout {
-      width: min(1380px, 96vw);
-      margin: 20px auto;
+    #ui {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
       display: grid;
-      grid-template-columns: 360px 1fr;
-      gap: 18px;
-      min-height: calc(100vh - 40px);
+      grid-template-columns: min(350px, 32vw) 1fr min(350px, 30vw);
+      grid-template-rows: 1fr auto;
+      gap: 10px;
+      padding: 10px;
     }
     .panel {
-      position: relative;
-      backdrop-filter: blur(16px);
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      box-shadow:
-        0 18px 40px rgba(0, 0, 0, 0.42),
-        inset 0 1px 0 rgba(248, 250, 252, 0.05);
-      overflow: hidden;
-    }
-    .panel::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(140deg, rgba(103, 212, 255, 0.08), transparent 40%);
-      pointer-events: none;
-    }
-    .sidebar { padding: 22px 20px; display: flex; flex-direction: column; gap: 16px; }
-    h1 {
-      margin: 0;
-      font-size: 1.4rem;
-      line-height: 1.25;
-      background: linear-gradient(90deg, #f8fafc, #bfdbfe 55%, #67d4ff);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-    }
-    .desc { margin: 0; color: var(--sub); font-size: 0.92rem; line-height: 1.65; }
-    .status {
-      background: linear-gradient(145deg, rgba(15, 23, 42, 0.68), rgba(30, 41, 59, 0.45));
-      border: 1px solid rgba(148, 163, 184, 0.18);
-      border-radius: 14px;
-      padding: 12px;
-    }
-    .status strong { color: #f8fafc; font-size: 1.08rem; }
-    .status p { margin: 8px 0 0; color: var(--sub); line-height: 1.5; font-size: 0.9rem; }
-    .badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: -2px; }
-    .badge {
-      padding: 6px 11px;
-      border-radius: 999px;
-      font-size: 0.76rem;
-      border: 1px solid rgba(125, 211, 252, 0.24);
-      color: #bfd6f7;
-      background: rgba(12, 20, 36, 0.72);
-    }
-    .legend { display: grid; gap: 9px; padding: 2px 0 0; }
-    .legend-item { display: flex; align-items: center; gap: 9px; color: var(--sub); font-size: 0.86rem; }
-    .swatch { width: 18px; height: 5px; border-radius: 12px; box-shadow: 0 0 12px currentColor; }
-    .map-panel {
-      display: grid;
-      grid-template-rows: 1fr auto;
-      overflow: hidden;
-    }
-    #map { min-height: 620px; width: 100%; }
-    .controls {
-      padding: 14px 18px 18px;
-      border-top: 1px solid rgba(148, 163, 184, 0.2);
-      background: linear-gradient(180deg, rgba(11, 18, 32, 0.55), var(--panel-strong));
-      display: grid;
-      grid-template-columns: auto 1fr auto;
-      gap: 12px;
-      align-items: center;
-    }
-    button {
-      border: 0;
-      background: linear-gradient(140deg, #38bdf8, #2563eb 52%, #1d4ed8);
-      color: white;
-      font-weight: 600;
-      padding: 10px 18px;
+      pointer-events: auto;
+      background: linear-gradient(160deg, rgba(18, 28, 45, .9), rgba(10, 14, 22, .92));
+      border: 1px solid var(--line);
       border-radius: 12px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 12px 40px rgba(0,0,0,.35);
+      overflow: hidden;
+    }
+    #leftPanel, #rightPanel { padding: 12px; overflow: auto; }
+    #rightPanel { grid-column: 3; }
+    #bottomBar {
+      grid-column: 1 / span 3;
+      display: grid;
+      grid-template-columns: repeat(8, minmax(80px, 1fr));
+      gap: 8px;
+      padding: 10px;
+    }
+    .btn {
+      border: 1px solid #38507c;
+      background: linear-gradient(180deg, #223862, #172845);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 8px;
+      font-weight: 700;
+      font-size: 14px;
       cursor: pointer;
-      transition: transform .22s ease, box-shadow .22s ease, filter .22s ease;
-      box-shadow: 0 9px 20px rgba(37, 99, 235, 0.32);
+      pointer-events: auto;
+      transition: .16s;
     }
-    button:hover { transform: translateY(-1px); box-shadow: 0 12px 26px rgba(37, 99, 235, 0.4); filter: saturate(1.12); }
-    button:active { transform: translateY(0); }
-    input[type='range'] {
-      width: 100%;
-      accent-color: #67d4ff;
+    .btn:hover { filter: brightness(1.1); }
+    .btn.active { outline: 2px solid #6ca7ff; }
+    .btn.warn { background: linear-gradient(180deg, #5a2f2f, #441f1f); border-color: #8f3f3f; }
+    h2 { margin: 0 0 8px; font-size: 18px; }
+    .muted { color: var(--sub); font-size: 13px; }
+    .stat {
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 1px dashed rgba(255,255,255,.12);
+      padding: 6px 0;
+      font-size: 13px;
     }
-    .tick { color: #bfd6f7; min-width: 120px; text-align: right; font-size: 0.85rem; font-weight: 500; }
-    .unit-tree {
-      border-top: 1px dashed rgba(148, 163, 184, 0.28);
-      padding-top: 12px;
-      max-height: 34vh;
-      overflow: auto;
+    .log { max-height: 240px; overflow: auto; font-size: 12px; line-height: 1.45; }
+    .log div { border-left: 2px solid #304a73; padding-left: 8px; margin: 6px 0; color: #c8d6f2; }
+    .titleSide-GER { color: var(--axis); }
+    .titleSide-SOV { color: var(--sov); }
+    .tag { padding: 2px 8px; border-radius: 999px; font-size: 12px; background: #1d2d49; border: 1px solid #31507d; }
+    #startOverlay {
+      position: fixed; inset: 0;
+      background: rgba(4, 7, 12, .84);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 10;
     }
-    .unit-tree h3 { margin: 0 0 8px; font-size: 1rem; color: #dbeafe; }
-    .tree-list { margin: 0; padding-left: 16px; color: var(--sub); font-size: 0.86rem; line-height: 1.5; }
-    .tree-list strong { color: #f8fafc; }
-    .leaflet-popup-content-wrapper,
-    .leaflet-popup-tip {
-      background: rgba(248, 250, 252, 0.96);
-      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.4);
+    .card {
+      width: min(92vw, 560px);
+      background: var(--panel2);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
     }
-    .leaflet-popup-content { min-width: 280px; }
-    .popup-title { font-weight: 700; margin-bottom: 6px; }
-    .popup-meta { color: #475569; font-size: 0.84rem; margin-bottom: 8px; }
-    .popup-block { font-size: 0.84rem; line-height: 1.4; }
-    @media (max-width: 1020px) {
-      .layout { grid-template-columns: 1fr; }
-      #map { min-height: 500px; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0; }
+    select {
+      padding: 8px; border-radius: 8px; background: #111c30; border: 1px solid #2d4468; color: var(--text);
+    }
+    @media (max-width: 980px) {
+      #ui { grid-template-columns: 1fr; grid-template-rows: auto auto auto; }
+      #rightPanel { grid-column: 1; }
+      #bottomBar { grid-template-columns: repeat(4, minmax(70px, 1fr)); }
     }
   </style>
 </head>
 <body>
-  <div class="layout">
-    <aside class="panel sidebar">
-      <h1>斯大林格勒战役动态地图</h1>
-      <p class="desc">使用免费高精度底图（Carto + OpenStreetMap 数据）叠加北约军标（NATO APP-6 风格），以月为单位展示 1942-07 至 1943-02 战局演进。</p>
-      <div class="badge-row">
-        <span class="badge">免费底图</span>
-        <span class="badge">北约符号</span>
-        <span class="badge">月度进度</span>
-        <span class="badge">可点开单位详情</span>
+  <div id="startOverlay">
+    <div class="card">
+      <h2>斯大林格勒：战术指挥官</h2>
+      <p class="muted">升级版玩法：目标点控制、补给、ZOC、战斗士气、AI 回合、胜负判定。你将指挥营级战斗群进行多回合会战。</p>
+      <div class="row">
+        <label>玩家阵营
+          <select id="pickSide"><option value="GER">德军（先手）</option><option value="SOV">苏军</option></select>
+        </label>
+        <label>AI 难度
+          <select id="pickDiff"><option value="normal">正常</option><option value="hard">困难</option></select>
+        </label>
       </div>
-      <div class="status">
-        <strong id="dateLabel">1942-07</strong>
-        <p id="eventLabel">德军向顿河与伏尔加河之间推进，外围战线拉长。</p>
-      </div>
-      <div class="legend">
-        <div class="legend-item"><i class="swatch" style="background:var(--axis)"></i>轴心国（德军）战斗群</div>
-        <div class="legend-item"><i class="swatch" style="background:var(--soviet)"></i>苏军战斗群</div>
-      </div>
-      <section class="unit-tree">
-        <h3>当前聚焦单位编制</h3>
-        <ul id="unitTree" class="tree-list"></ul>
-      </section>
-    </aside>
-
-    <section class="panel map-panel">
-      <div id="map" aria-label="Battle map"></div>
-      <div class="controls">
-        <button id="playBtn" type="button">▶ 播放</button>
-        <input id="timeline" type="range" min="0" max="7" step="1" value="0" />
-        <div id="tickLabel" class="tick">阶段 1 / 8</div>
-      </div>
-    </section>
+      <button id="startBtn" class="btn">开始战役</button>
+    </div>
   </div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="https://cdn.jsdelivr.net/npm/milsymbol@3.1.0/dist/milsymbol.min.js"></script>
-  <script>
-    const monthFrames = [
-      {
-        date: '1942-07',
-        event: '德军向顿河与伏尔加河之间推进，外围战线拉长。',
-        focus: '第6集团军',
-        units: [
-          { side: 'axis', name: '德军第6集团军', sidc: 'SFGPUCI----K---', lat: 49.1, lng: 43.6, detail: axisDetail('第6集团军', '保卢斯', '主攻方向：卡拉奇') },
-          { side: 'axis', name: '德军第4装甲集团军', sidc: 'SFGPUCR----K---', lat: 48.9, lng: 44.5, detail: axisDetail('第4装甲集团军', '霍特', '机动突击：南翼牵制') },
-          { side: 'soviet', name: '苏军第62集团军', sidc: 'SFGPUCI----K---', lat: 48.72, lng: 44.49, detail: sovietDetail('第62集团军', '洛帕京', '沿伏尔加右岸布防') },
-          { side: 'soviet', name: '苏军第64集团军', sidc: 'SFGPUCI----K---', lat: 48.58, lng: 44.42, detail: sovietDetail('第64集团军', '舒米洛夫', '构筑南部防御带') }
-        ]
-      },
-      {
-        date: '1942-08',
-        event: '德军装甲尖兵逼近城区，斯大林格勒外围防线遭猛烈冲击。',
-        focus: '第4装甲集团军',
-        units: [
-          { side: 'axis', name: '德军第6集团军', sidc: 'SFGPUCI----K---', lat: 48.95, lng: 44.05, detail: axisDetail('第6集团军', '保卢斯', '城区西北方向突入') },
-          { side: 'axis', name: '德军第4装甲集团军', sidc: 'SFGPUCR----K---', lat: 48.75, lng: 44.2, detail: axisDetail('第4装甲集团军', '霍特', '南部楔入推进') },
-          { side: 'soviet', name: '苏军第62集团军', sidc: 'SFGPUCI----K---', lat: 48.73, lng: 44.52, detail: sovietDetail('第62集团军', '丘伊科夫(后任)', '市区纵深迟滞') },
-          { side: 'soviet', name: '苏军近卫第13师', sidc: 'SFGPUCI----K---', lat: 48.74, lng: 44.57, detail: battalionDetail('近卫第13步兵师', '罗季姆采夫', '夜渡伏尔加后投入中央渡口') }
-        ]
-      },
-      {
-        date: '1942-09',
-        event: '巷战白热化，工厂区与火车站反复易手。',
-        focus: '苏军第62集团军',
-        units: [
-          { side: 'axis', name: '德军LI军', sidc: 'SFGPUCI----K---', lat: 48.77, lng: 44.43, detail: battalionDetail('LI军', '赛德利茨-库尔茨巴赫', '向马马耶夫岗突进') },
-          { side: 'axis', name: '德军第71步兵师', sidc: 'SFGPUCI----K---', lat: 48.74, lng: 44.47, detail: battalionDetail('第71步兵师', '哈特曼', '火车站及中心城区争夺') },
-          { side: 'soviet', name: '苏军第62集团军', sidc: 'SFGPUCI----K---', lat: 48.72, lng: 44.55, detail: sovietDetail('第62集团军', '丘伊科夫', '依托伏尔加岸构建节点防御') },
-          { side: 'soviet', name: '苏军第284步兵师', sidc: 'SFGPUCI----K---', lat: 48.79, lng: 44.58, detail: battalionDetail('第284步兵师', '巴季乌克', '狙击与楼群防御作战') }
-        ]
-      },
-      {
-        date: '1942-10',
-        event: '德军向拖拉机厂、红十月工厂发动高强度突击。',
-        focus: '工厂区防御群',
-        units: [
-          { side: 'axis', name: '德军第14装甲师', sidc: 'SFGPUCR----K---', lat: 48.81, lng: 44.49, detail: battalionDetail('第14装甲师', '林德曼', '工厂区纵深突破') },
-          { side: 'axis', name: '德军第305步兵师', sidc: 'SFGPUCI----K---', lat: 48.78, lng: 44.46, detail: battalionDetail('第305步兵师', '施泰纳', '贴近伏尔加岸压缩苏军') },
-          { side: 'soviet', name: '苏军第37近卫师', sidc: 'SFGPUCI----K---', lat: 48.82, lng: 44.56, detail: battalionDetail('第37近卫师', '若罗夫', '拖拉机厂阵地死守') },
-          { side: 'soviet', name: '苏军第95步兵师', sidc: 'SFGPUCI----K---', lat: 48.76, lng: 44.54, detail: battalionDetail('第95步兵师', '戈罗霍夫', '工厂居民区逐屋争夺') }
-        ]
-      },
-      {
-        date: '1942-11',
-        event: '“天王星行动”启动，苏军从南北两翼合围第6集团军。',
-        focus: '西南方面军合围群',
-        units: [
-          { side: 'axis', name: '德军第6集团军', sidc: 'SFGPUCI----K---', lat: 48.74, lng: 44.46, detail: axisDetail('第6集团军', '保卢斯', '城区内被合围风险急升') },
-          { side: 'axis', name: '罗马尼亚第3集团军', sidc: 'SFGPUCI----K---', lat: 49.35, lng: 43.95, detail: battalionDetail('罗马尼亚第3集团军', '杜米特雷斯库', '北翼被突破') },
-          { side: 'soviet', name: '苏军第5坦克集团军', sidc: 'SFGPUCR----K---', lat: 49.22, lng: 43.72, detail: sovietDetail('第5坦克集团军', '罗特米斯特罗夫', '北翼穿插') },
-          { side: 'soviet', name: '苏军第51集团军', sidc: 'SFGPUCI----K---', lat: 48.3, lng: 44.1, detail: sovietDetail('第51集团军', '特鲁法诺夫', '南翼突击') }
-        ]
-      },
-      {
-        date: '1942-12',
-        event: '曼施坦因解围行动受阻，包围圈趋于稳固。',
-        focus: '包围圈封锁群',
-        units: [
-          { side: 'axis', name: '德军第4装甲集团军', sidc: 'SFGPUCR----K---', lat: 48.35, lng: 44.35, detail: axisDetail('第4装甲集团军', '霍特', '冬季风暴行动北推') },
-          { side: 'axis', name: '德军第57装甲军', sidc: 'SFGPUCR----K---', lat: 48.44, lng: 44.23, detail: battalionDetail('第57装甲军', '基尔希纳', '试图打通走廊') },
-          { side: 'soviet', name: '苏军第2近卫集团军', sidc: 'SFGPUCI----K---', lat: 48.49, lng: 44.3, detail: sovietDetail('第2近卫集团军', '马利诺夫斯基', '阻击解围部队') },
-          { side: 'soviet', name: '苏军第21集团军', sidc: 'SFGPUCI----K---', lat: 48.95, lng: 44.1, detail: sovietDetail('第21集团军', '奇斯佳科夫', '加固北半包围圈') }
-        ]
-      },
-      {
-        date: '1943-01',
-        event: '“指环行动”分割围困德军，机场与补给节点持续丧失。',
-        focus: '指环行动突击群',
-        units: [
-          { side: 'axis', name: '德军第6集团军（北部口袋）', sidc: 'SFGPUCI----K---', lat: 48.86, lng: 44.45, detail: axisDetail('第6集团军北群', '施特雷克', '补给与弹药濒临枯竭') },
-          { side: 'axis', name: '德军第6集团军（南部口袋）', sidc: 'SFGPUCI----K---', lat: 48.66, lng: 44.48, detail: axisDetail('第6集团军南群', '保卢斯', '防区被分割') },
-          { side: 'soviet', name: '苏军第65集团军', sidc: 'SFGPUCI----K---', lat: 48.82, lng: 44.34, detail: sovietDetail('第65集团军', '巴托夫', '北部压缩') },
-          { side: 'soviet', name: '苏军第24集团军', sidc: 'SFGPUCI----K---', lat: 48.77, lng: 44.4, detail: sovietDetail('第24集团军', '加拉宁', '中部切割') }
-        ]
-      },
-      {
-        date: '1943-02',
-        event: '德军残部投降，斯大林格勒会战结束。',
-        focus: '最终清剿群',
-        units: [
-          { side: 'axis', name: '德军残余战斗群', sidc: 'SFGPUCI----K---', lat: 48.71, lng: 44.5, detail: axisDetail('残余战斗群', '各军残部', '组织性抵抗终止') },
-          { side: 'soviet', name: '苏军第62集团军', sidc: 'SFGPUCI----K---', lat: 48.72, lng: 44.56, detail: sovietDetail('第62集团军', '丘伊科夫', '城区收复完成') },
-          { side: 'soviet', name: '苏军第64集团军', sidc: 'SFGPUCI----K---', lat: 48.65, lng: 44.46, detail: sovietDetail('第64集团军', '舒米洛夫', '南部扫荡') }
-        ]
-      }
-    ];
+  <div id="ui">
+    <aside id="leftPanel" class="panel"></aside>
+    <aside id="rightPanel" class="panel"></aside>
+    <footer id="bottomBar" class="panel">
+      <button class="btn active" data-mode="MOVE">移动</button>
+      <button class="btn" data-mode="ATTACK">攻击</button>
+      <button class="btn" data-mode="BOMBARD">炮击</button>
+      <button class="btn" data-mode="FORTIFY">构筑</button>
+      <button class="btn" id="btnSupply">补给</button>
+      <button class="btn" id="btnCenter">定位单位</button>
+      <button class="btn warn" id="btnEnd">结束回合</button>
+      <button class="btn" id="btnRestart">重开</button>
+    </footer>
+  </div>
 
-    function axisDetail(army, commander, role) {
-      return {
-        armyGroup: 'B集团军群',
-        army,
-        corps: '第XI军 / 第XIV装甲军',
-        division: '第71步兵师 / 第14装甲师',
-        regiment: '第194掷弹兵团 / 第36装甲团',
-        battalion: '第194团第2营 / 第36团第1营',
-        commander,
-        role
-      };
+<script>
+let W, H;
+let hexSize = 30;
+let originX = 30, originY = 40;
+const COLS = 14, ROWS = 10;
+
+const TERRAIN = {
+  STEPPE: { name:'草原', cost:1, def:0, color:[65,90,74] },
+  CITY: { name:'城区', cost:2, def:2, color:[96,96,105] },
+  INDUSTRY: { name:'工业区', cost:2, def:3, color:[114,92,84] },
+  HILL: { name:'高地', cost:2, def:1, color:[92,110,86] },
+  RAIL: { name:'铁路', cost:1, def:0, color:[120,120,126] },
+  RIVER: { name:'伏尔加河', cost:99, def:0, color:[48,78,140] },
+  BRIDGE: { name:'桥梁', cost:1, def:0, color:[155,128,77] },
+  EAST: { name:'东岸', cost:1, def:0, color:[72,85,82] }
+};
+
+let objectives = [
+  { id:'KURGAN', q:4, r:4, vp:2, name:'马马耶夫岗', owner:null },
+  { id:'STATION', q:3, r:3, vp:2, name:'火车站', owner:null },
+  { id:'REDOCT', q:5, r:5, vp:3, name:'红十月工厂', owner:null },
+  { id:'LANDING', q:8, r:4, vp:2, name:'中央渡口', owner:null },
+  { id:'ELEVATOR', q:2, r:7, vp:2, name:'粮仓', owner:null }
+];
+
+const mapData = new Map();
+const units = [];
+let selected = null;
+let mode = 'MOVE';
+let logs = [];
+let gameOver = false;
+
+let state = {
+  turn: 1,
+  active: 'GER',
+  playerSide: 'GER',
+  aiSide: 'SOV',
+  difficulty: 'normal',
+  maxTurn: 14,
+  vp: { GER:0, SOV:0 },
+  support: { GER:{arty:1, air:1, supply:1}, SOV:{arty:1, air:0, supply:1} }
+};
+
+function setup() {
+  W = windowWidth;
+  H = windowHeight;
+  createCanvas(W, H);
+  angleMode(RADIANS);
+  textFont('monospace');
+  initMap();
+  bindUI();
+}
+
+function windowResized() {
+  W = windowWidth; H = windowHeight;
+  resizeCanvas(W, H);
+  hexSize = floor(constrain(W / 34, 20, 36));
+}
+
+function startGame() {
+  const side = document.getElementById('pickSide').value;
+  const diff = document.getElementById('pickDiff').value;
+  state.playerSide = side;
+  state.aiSide = side === 'GER' ? 'SOV' : 'GER';
+  state.difficulty = diff;
+  resetGame();
+  document.getElementById('startOverlay').style.display = 'none';
+}
+
+function resetGame() {
+  units.length = 0;
+  selected = null;
+  mode = 'MOVE';
+  logs = [];
+  gameOver = false;
+  state.turn = 1;
+  state.active = 'GER';
+  state.vp = { GER:0, SOV:0 };
+  state.support = { GER:{arty:1, air:1, supply:1}, SOV:{arty:1, air:0, supply:1} };
+  objectives.forEach(o => o.owner = null);
+
+  addUnit({ side:'GER', name:'71步兵师 / I营', q:0, r:3, atk:7, def:6, mp:5, hp:6, morale:7, army:'6集团军' });
+  addUnit({ side:'GER', name:'24装甲师 / 战斗群', q:1, r:5, atk:9, def:6, mp:6, hp:5, morale:7, armor:1, army:'6集团军' });
+  addUnit({ side:'GER', name:'100猎兵师 / I营', q:0, r:7, atk:7, def:7, mp:5, hp:6, morale:8, army:'6集团军' });
+
+  addUnit({ side:'SOV', name:'62集团军 / NKVD营', q:7, r:4, atk:7, def:8, mp:5, hp:6, morale:8, army:'62集团军' });
+  addUnit({ side:'SOV', name:'13近卫师 / II营', q:12, r:3, atk:8, def:7, mp:5, hp:6, morale:8, army:'62集团军' });
+  addUnit({ side:'SOV', name:'海军步兵营', q:12, r:6, atk:8, def:6, mp:5, hp:5, morale:7, army:'62集团军' });
+
+  refreshSide();
+  log('战役开始：占领目标点并坚持到终局。');
+}
+
+function initMap() {
+  mapData.clear();
+  for (let r = 0; r < ROWS; r++) {
+    for (let q = 0; q < COLS; q++) {
+      let t = TERRAIN.STEPPE;
+      if (q >= 9) t = TERRAIN.RIVER;
+      if (q >= 11) t = TERRAIN.EAST;
+      if ((q === 9 && r === 3) || (q === 9 && r === 6)) t = TERRAIN.BRIDGE;
+      if (q >= 2 && q <= 8 && r >= 2 && r <= 8) t = TERRAIN.CITY;
+      if ((q === 5 && r === 5) || (q === 5 && r === 6) || (q === 6 && r === 5)) t = TERRAIN.INDUSTRY;
+      if ((r === 3 && q >= 1 && q <= 8) || (r === 4 && q >= 2 && q <= 8)) if (t !== TERRAIN.RIVER && t !== TERRAIN.EAST) t = TERRAIN.RAIL;
+      if (q === 4 && r === 4) t = TERRAIN.HILL;
+      mapData.set(key(q, r), { q, r, terrain: t });
+    }
+  }
+}
+
+function addUnit(u) {
+  units.push({ ...u, id: `${u.side}_${Math.random().toString(36).slice(2,9)}`, mpLeft:u.mp, acted:false, supplied:true, entrenched:0, ammo:2, alive:true });
+}
+
+function draw() {
+  clear();
+  background(10, 14, 24);
+  drawHexes();
+  drawObjectiveOverlay();
+  drawUnits();
+  drawSelectionOverlay();
+  updatePanels();
+
+  if (!gameOver && state.active === state.aiSide) {
+    runAI();
+  }
+}
+
+function drawHexes() {
+  for (let r = 0; r < ROWS; r++) {
+    for (let q = 0; q < COLS; q++) {
+      const c = mapData.get(key(q, r));
+      if (!c) continue;
+      const p = hexToPixel(q, r);
+      stroke(30, 40, 60);
+      strokeWeight(1.4);
+      fill(...c.terrain.color);
+      hexShape(p.x, p.y);
+      fill(0, 80);
+      noStroke();
+      textSize(10);
+      text(c.terrain.name[0], p.x - 4, p.y + 4);
+    }
+  }
+}
+
+function drawObjectiveOverlay() {
+  objectives.forEach(o => {
+    const p = hexToPixel(o.q, o.r);
+    noFill();
+    stroke(o.owner === 'GER' ? '#e8c66a' : o.owner === 'SOV' ? '#e46a6a' : '#b8c5de');
+    strokeWeight(2);
+    circle(p.x, p.y, hexSize * 1.2);
+    noStroke();
+    fill(245);
+    textSize(10);
+    textAlign(CENTER, CENTER);
+    text(`${o.vp}`, p.x, p.y);
+  });
+  textAlign(LEFT, BASELINE);
+}
+
+function drawUnits() {
+  units.filter(u => u.alive).forEach(u => {
+    const p = hexToPixel(u.q, u.r);
+    const base = u.side === 'GER' ? color(224, 193, 106) : color(208, 99, 99);
+    fill(red(base), green(base), blue(base), u.side === state.active ? 255 : 180);
+    stroke(0, 140);
+    rectMode(CENTER);
+    rect(p.x, p.y, hexSize * 1.6, hexSize * 0.9, 6);
+
+    if (selected && selected.id === u.id) {
+      noFill(); stroke('#d5e7ff'); strokeWeight(2);
+      rect(p.x, p.y, hexSize * 1.8, hexSize * 1.1, 8);
     }
 
-    function sovietDetail(army, commander, role) {
-      return {
-        front: '顿河方面军 / 斯大林格勒方面军',
-        army,
-        corps: '近卫步兵军 / 坦克军',
-        division: '近卫第13师 / 第284步兵师',
-        regiment: '第39近卫团 / 第1047步兵团',
-        battalion: '第39团第1营 / 第1047团第2营',
-        commander,
-        role
-      };
+    noStroke(); fill(15);
+    textSize(10);
+    textAlign(CENTER, CENTER);
+    text(`${u.hp}HP/${u.mpLeft}MP`, p.x, p.y + 1);
+    if (u.entrenched) {
+      fill('#c7e4ff');
+      text(`E${u.entrenched}`, p.x + hexSize * 0.45, p.y - hexSize * 0.35);
     }
+  });
+  rectMode(CORNER);
+  textAlign(LEFT, BASELINE);
+}
 
-    function battalionDetail(army, commander, role) {
-      return {
-        front: '战役直属集群',
-        army,
-        corps: '军级特遣队',
-        division: '主战师级单位',
-        regiment: '主战团级单位',
-        battalion: '前沿营战斗队',
-        commander,
-        role
-      };
-    }
-
-    const map = L.map('map', { zoomControl: true }).setView([48.73, 44.52], 9);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-      maxZoom: 19
-    }).addTo(map);
-
-    const markersLayer = L.layerGroup().addTo(map);
-    const timeline = document.getElementById('timeline');
-    const tickLabel = document.getElementById('tickLabel');
-    const dateLabel = document.getElementById('dateLabel');
-    const eventLabel = document.getElementById('eventLabel');
-    const playBtn = document.getElementById('playBtn');
-    const unitTree = document.getElementById('unitTree');
-
-    let currentIndex = 0;
-    let playing = false;
-    let timer = null;
-
-    function makeIcon(unit) {
-      const color = unit.side === 'axis' ? '#f87171' : '#4ade80';
-      const symbol = new ms.Symbol(unit.sidc, {
-        size: 36,
-        frame: true,
-        fill: true,
-        monoColor: color,
-        infoFields: false,
-        uniqueDesignation: unit.name
-      });
-      return L.divIcon({
-        html: `<div style="display:flex;flex-direction:column;align-items:center;gap:3px;filter:drop-shadow(0 2px 8px rgba(0,0,0,.65));"><div>${symbol.asSVG()}</div><div style="font-size:11px;color:${color};font-weight:700;line-height:1.1;background:rgba(2,6,23,.62);padding:2px 6px;border-radius:999px;border:1px solid rgba(148,163,184,.25)">${unit.name}</div></div>`,
-        className: '',
-        iconSize: [150, 62],
-        iconAnchor: [75, 31]
-      });
-    }
-
-    function detailHtml(unit) {
-      const d = unit.detail;
-      return `
-        <div class="popup-title">${unit.name}</div>
-        <div class="popup-meta">指挥官：${d.commander}</div>
-        <div class="popup-block">
-          <div>战役角色：${d.role}</div>
-          <div>集团军级：${d.army || '-'}</div>
-          <div>军级：${d.corps}</div>
-          <div>师级：${d.division}</div>
-          <div>团级：${d.regiment}</div>
-          <div>营级：${d.battalion}</div>
-        </div>
-      `;
-    }
-
-    function renderTree(unit) {
-      const d = unit.detail;
-      unitTree.innerHTML = `
-        <li><strong>聚焦单位：</strong>${unit.name}</li>
-        <li><strong>指挥官：</strong>${d.commander}</li>
-        <li><strong>集团军：</strong>${d.army || '-'}</li>
-        <li><strong>军：</strong>${d.corps}</li>
-        <li><strong>师：</strong>${d.division}</li>
-        <li><strong>团：</strong>${d.regiment}</li>
-        <li><strong>营：</strong>${d.battalion}</li>
-      `;
-    }
-
-    function renderFrame(index) {
-      const frame = monthFrames[index];
-      dateLabel.textContent = frame.date;
-      eventLabel.textContent = frame.event;
-      tickLabel.textContent = `阶段 ${index + 1} / ${monthFrames.length}`;
-      timeline.value = String(index);
-
-      markersLayer.clearLayers();
-      frame.units.forEach((unit, idx) => {
-        const marker = L.marker([unit.lat, unit.lng], { icon: makeIcon(unit), keyboard: true }).addTo(markersLayer);
-        marker.bindPopup(detailHtml(unit));
-        if (idx === 0) {
-          renderTree(unit);
-        }
-        marker.on('click', () => renderTree(unit));
-      });
-    }
-
-    function stopPlay() {
-      playing = false;
-      if (timer) clearInterval(timer);
-      playBtn.textContent = '▶ 播放';
-    }
-
-    function startPlay() {
-      playing = true;
-      playBtn.textContent = '⏸ 暂停';
-      timer = setInterval(() => {
-        currentIndex = (currentIndex + 1) % monthFrames.length;
-        renderFrame(currentIndex);
-      }, 1800);
-    }
-
-    playBtn.addEventListener('click', () => {
-      if (playing) {
-        stopPlay();
-      } else {
-        startPlay();
-      }
+function drawSelectionOverlay() {
+  if (!selected || gameOver) return;
+  if (mode === 'MOVE' && selected.side === state.active) {
+    reachable(selected).forEach(t => {
+      const p = hexToPixel(t.q, t.r);
+      noFill(); stroke(190, 220, 255, 120); strokeWeight(1.8);
+      hexShape(p.x, p.y);
+      noStroke(); fill(230,230,240,120); textSize(9); textAlign(CENTER, CENTER);
+      text(t.mp, p.x, p.y);
     });
-
-    timeline.addEventListener('input', (event) => {
-      currentIndex = Number(event.target.value);
-      renderFrame(currentIndex);
-      if (playing) stopPlay();
+  }
+  if (mode === 'ATTACK' && selected.side === state.active) {
+    enemiesAdjacent(selected).forEach(e => {
+      const p = hexToPixel(e.q, e.r);
+      noFill(); stroke(255, 120, 120, 160); strokeWeight(2); hexShape(p.x, p.y);
     });
+  }
+  textAlign(LEFT, BASELINE);
+}
 
-    renderFrame(currentIndex);
-  </script>
+function mousePressed() {
+  if (gameOver || mouseY > H - 100) return;
+  const h = pixelToHex(mouseX, mouseY);
+  if (!inMap(h.q, h.r)) return;
+  const targetUnit = unitAt(h.q, h.r);
+
+  if (targetUnit) {
+    if (targetUnit.side === state.active) { selected = targetUnit; return; }
+    if (selected && mode === 'ATTACK') doAttack(selected, targetUnit);
+    if (selected && mode === 'BOMBARD') doBombard(targetUnit);
+    return;
+  }
+
+  if (selected && mode === 'MOVE') doMove(selected, h.q, h.r);
+}
+
+function doMove(u, q, r) {
+  if (u.side !== state.active || u.acted) return log('该单位本回合已行动。');
+  const tile = reachable(u).find(t => t.q === q && t.r === r);
+  if (!tile) return log('无法到达该格。');
+  u.q = q; u.r = r; u.mpLeft = tile.mp;
+  if (enemyZOC(q, r, opposite(u.side))) u.mpLeft = max(0, u.mpLeft - 1);
+  log(`${u.name} 机动至 (${q},${r})。`);
+  updateObjectives();
+}
+
+function doAttack(a, d) {
+  if (a.side !== state.active || a.acted) return log('该单位无法继续攻击。');
+  if (hexDist(a.q, a.r, d.q, d.r) !== 1) return log('必须邻接攻击。');
+  const cell = mapData.get(key(d.q, d.r));
+  const defBonus = cell.terrain.def + d.entrenched;
+  let atk = a.atk + floor(a.morale / 3) + (a.ammo > 0 ? 1 : 0);
+  let def = d.def + defBonus + floor(d.morale / 3);
+  if (!a.supplied) atk -= 2;
+  const roll = floor(random(1, 7));
+  const damage = max(0, floor((atk + roll - def) / 2));
+  const counter = max(0, floor((def + 3 - atk) / 4));
+  d.hp -= damage;
+  a.hp -= counter;
+  a.ammo = max(0, a.ammo - 1);
+  a.acted = true;
+
+  if (damage > 0) d.morale = max(3, d.morale - 1);
+  if (counter > 0) a.morale = max(3, a.morale - 1);
+  cleanupDead();
+  log(`${a.name} 攻击 ${d.name}：造成 ${damage}，反损 ${counter}（d6=${roll}）`);
+  updateObjectives();
+  checkGameEnd();
+}
+
+function doBombard(target) {
+  const s = state.support[state.active];
+  if (s.arty <= 0 && s.air <= 0) return log('无炮火/空袭支援。');
+  const useAir = s.air > 0 && state.active === 'GER';
+  if (useAir) s.air--; else s.arty--;
+  const cover = mapData.get(key(target.q, target.r)).terrain.def;
+  const roll = floor(random(1, 7));
+  const hit = roll + (useAir ? 1 : 0) - cover >= 4;
+  if (hit) {
+    target.hp -= 1;
+    target.morale = max(3, target.morale - 1);
+    log(`${useAir ? '空袭' : '炮击'}命中 ${target.name}。`);
+  } else {
+    log(`${useAir ? '空袭' : '炮击'}偏离目标。`);
+  }
+  cleanupDead();
+  checkGameEnd();
+}
+
+function doFortify() {
+  if (!selected || selected.side !== state.active) return log('请选择己方单位。');
+  if (selected.acted) return log('该单位已行动。');
+  selected.entrenched = min(2, selected.entrenched + 1);
+  selected.acted = true;
+  log(`${selected.name} 构筑工事，工事等级 E${selected.entrenched}。`);
+}
+
+function doSupply() {
+  const s = state.support[state.active];
+  if (s.supply <= 0) return log('补给行动次数不足。');
+  if (!selected || selected.side !== state.active) return log('请选择己方单位进行补给。');
+  s.supply--;
+  selected.supplied = true;
+  selected.ammo = min(2, selected.ammo + 1);
+  selected.morale = min(9, selected.morale + 1);
+  log(`${selected.name} 完成补给，弹药与士气恢复。`);
+}
+
+function endTurn() {
+  if (gameOver) return;
+  updateObjectives();
+  if (state.active === 'SOV') state.turn++;
+  state.active = opposite(state.active);
+  refreshSide();
+  selected = null;
+  checkGameEnd();
+}
+
+function refreshSide() {
+  const t = state.turn;
+  units.forEach(u => {
+    if (!u.alive || u.side !== state.active) return;
+    u.mpLeft = u.mp - (state.active === 'GER' && t % 2 === 0 ? 1 : 0);
+    u.acted = false;
+    u.supplied = supplyConnected(u);
+    if (!u.supplied) u.morale = max(3, u.morale - 1);
+  });
+  state.support[state.active] = {
+    arty: state.active === 'SOV' ? (t < 5 ? 1 : 2) : 1,
+    air: state.active === 'GER' && t % 2 === 1 ? 1 : 0,
+    supply: 1
+  };
+  log(`--- ${state.active} 第 ${state.turn} 回合 ---`);
+}
+
+function runAI() {
+  if (frameCount % 22 !== 0) return;
+  const aiUnits = units.filter(u => u.alive && u.side === state.aiSide);
+  for (const u of aiUnits) {
+    if (u.acted) continue;
+    const adj = enemiesAdjacent(u);
+    if (adj.length) { doAttack(u, weakest(adj)); return; }
+    const obj = nearestUnfriendlyObjective(u.side, u.q, u.r);
+    if (obj) {
+      const options = reachable(u).filter(t => !unitAt(t.q, t.r));
+      options.sort((a, b) => hexDist(a.q, a.r, obj.q, obj.r) - hexDist(b.q, b.r, obj.q, obj.r));
+      if (options[0]) { doMove(u, options[0].q, options[0].r); if (state.difficulty === 'hard') u.entrenched = min(1, u.entrenched + 1); return; }
+    }
+    u.acted = true;
+  }
+  endTurn();
+}
+
+function updateObjectives() {
+  objectives.forEach(o => {
+    const g = units.find(u => u.alive && u.side === 'GER' && u.q === o.q && u.r === o.r);
+    const s = units.find(u => u.alive && u.side === 'SOV' && u.q === o.q && u.r === o.r);
+    if (g && !s) o.owner = 'GER';
+    if (s && !g) o.owner = 'SOV';
+  });
+  state.vp = { GER:0, SOV:0 };
+  objectives.forEach(o => { if (o.owner) state.vp[o.owner] += o.vp; });
+}
+
+function checkGameEnd() {
+  const gerAlive = units.some(u => u.alive && u.side === 'GER');
+  const sovAlive = units.some(u => u.alive && u.side === 'SOV');
+  if (!gerAlive || !sovAlive || state.turn > state.maxTurn) {
+    gameOver = true;
+    const scoreGER = state.vp.GER + units.filter(u => u.alive && u.side === 'GER').length;
+    const scoreSOV = state.vp.SOV + units.filter(u => u.alive && u.side === 'SOV').length;
+    const result = scoreGER === scoreSOV ? '平局' : scoreGER > scoreSOV ? '德军胜' : '苏军胜';
+    log(`战役结束：${result}（GER ${scoreGER} : SOV ${scoreSOV}）`);
+  }
+}
+
+function cleanupDead() {
+  units.forEach(u => {
+    if (u.alive && u.hp <= 0) {
+      u.alive = false;
+      if (selected && selected.id === u.id) selected = null;
+      log(`${u.name} 被击溃。`);
+    }
+  });
+}
+
+function bindUI() {
+  document.getElementById('startBtn').addEventListener('click', startGame);
+  document.querySelectorAll('[data-mode]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      mode = btn.dataset.mode;
+      document.querySelectorAll('[data-mode]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      if (mode === 'FORTIFY') doFortify();
+    });
+  });
+  document.getElementById('btnSupply').addEventListener('click', doSupply);
+  document.getElementById('btnCenter').addEventListener('click', () => {
+    const pick = units.find(u => u.alive && u.side === state.active);
+    if (pick) selected = pick;
+  });
+  document.getElementById('btnEnd').addEventListener('click', endTurn);
+  document.getElementById('btnRestart').addEventListener('click', () => {
+    document.getElementById('startOverlay').style.display = 'flex';
+  });
+}
+
+function updatePanels() {
+  const left = document.getElementById('leftPanel');
+  const right = document.getElementById('rightPanel');
+  const activeTitleClass = `titleSide-${state.active}`;
+
+  left.innerHTML = `
+    <h2 class="${activeTitleClass}">第 ${state.turn} 回合 · ${state.active === 'GER' ? '德军行动' : '苏军行动'}</h2>
+    <div class="stat"><span>模式</span><span class="tag">${mode}</span></div>
+    <div class="stat"><span>胜利点</span><span>GER ${state.vp.GER} : ${state.vp.SOV} SOV</span></div>
+    <div class="stat"><span>回合上限</span><span>${state.maxTurn}</span></div>
+    <div class="stat"><span>当前支援</span><span>空袭 ${state.support[state.active].air} / 炮击 ${state.support[state.active].arty}</span></div>
+    <div class="stat"><span>补给动作</span><span>${state.support[state.active].supply}</span></div>
+    <div class="stat"><span>玩家阵营</span><span>${state.playerSide}</span></div>
+    <p class="muted">规则要点：进入敌军 ZOC 会额外消耗 MP；无补给会持续降士气；目标点每回合实时计分。</p>
+    <h3>目标点控制</h3>
+    ${objectives.map(o => `<div class="stat"><span>${o.name} (+${o.vp})</span><span>${o.owner || '中立'}</span></div>`).join('')}
+  `;
+
+  if (!selected) {
+    right.innerHTML = `<h2>单位详情</h2><p class="muted">点击地图单位以查看详情。</p><h3>战报</h3><div class="log">${logs.slice(-10).map(l => `<div>${l}</div>`).join('')}</div>`;
+    return;
+  }
+  const t = mapData.get(key(selected.q, selected.r));
+  right.innerHTML = `
+    <h2>${selected.name}</h2>
+    <div class="stat"><span>阵营 / 集团军</span><span>${selected.side} · ${selected.army}</span></div>
+    <div class="stat"><span>HP / 士气</span><span>${selected.hp} / ${selected.morale}</span></div>
+    <div class="stat"><span>ATK / DEF</span><span>${selected.atk} / ${selected.def}</span></div>
+    <div class="stat"><span>MP</span><span>${selected.mpLeft}/${selected.mp}</span></div>
+    <div class="stat"><span>补给 / 弹药</span><span>${selected.supplied ? '正常' : '中断'} / ${selected.ammo}</span></div>
+    <div class="stat"><span>工事</span><span>E${selected.entrenched}</span></div>
+    <div class="stat"><span>地形</span><span>${t.terrain.name} DEF+${t.terrain.def}</span></div>
+    <div class="stat"><span>坐标</span><span>(${selected.q}, ${selected.r})</span></div>
+    <h3>战报</h3><div class="log">${logs.slice(-10).map(l => `<div>${l}</div>`).join('')}</div>
+  `;
+}
+
+function reachable(u) {
+  const best = new Map([[key(u.q,u.r), u.mpLeft]]);
+  const queue = [{q:u.q, r:u.r, mp:u.mpLeft}];
+  const out = [];
+  while (queue.length) {
+    const cur = queue.shift();
+    out.push(cur);
+    for (const n of neighbors(cur.q, cur.r)) {
+      if (!inMap(n.q, n.r)) continue;
+      if (unitAt(n.q, n.r) && !(n.q === u.q && n.r === u.r)) continue;
+      const t = mapData.get(key(n.q, n.r)).terrain;
+      if (t.cost >= 90) continue;
+      let cost = t.cost + (enemyZOC(n.q, n.r, opposite(u.side)) ? 1 : 0);
+      const left = cur.mp - cost;
+      if (left < 0) continue;
+      const k = key(n.q, n.r);
+      if (!best.has(k) || left > best.get(k)) {
+        best.set(k, left);
+        queue.push({ q:n.q, r:n.r, mp:left });
+      }
+    }
+  }
+  return out;
+}
+
+function supplyConnected(u) {
+  const sourceQ = u.side === 'GER' ? 0 : 12;
+  const visited = new Set([key(u.q, u.r)]);
+  const queue = [{ q:u.q, r:u.r }];
+  while (queue.length) {
+    const c = queue.shift();
+    if (Math.abs(c.q - sourceQ) <= 1) return true;
+    for (const n of neighbors(c.q, c.r)) {
+      if (!inMap(n.q, n.r)) continue;
+      const t = mapData.get(key(n.q, n.r)).terrain;
+      if (t.cost >= 90) continue;
+      const enemy = unitAt(n.q, n.r);
+      if (enemy && enemy.side !== u.side) continue;
+      const k = key(n.q, n.r);
+      if (visited.has(k)) continue;
+      visited.add(k);
+      queue.push(n);
+    }
+  }
+  return false;
+}
+
+function enemyZOC(q, r, enemySide) {
+  return units.some(u => u.alive && u.side === enemySide && hexDist(u.q, u.r, q, r) === 1);
+}
+
+function enemiesAdjacent(u) {
+  return neighbors(u.q, u.r).map(n => unitAt(n.q, n.r)).filter(v => v && v.side !== u.side && v.alive);
+}
+
+function weakest(arr) { return [...arr].sort((a,b) => a.hp - b.hp)[0]; }
+function nearestUnfriendlyObjective(side, q, r) {
+  return [...objectives].filter(o => o.owner !== side).sort((a,b) => hexDist(q,r,a.q,a.r)-hexDist(q,r,b.q,b.r))[0];
+}
+
+function unitAt(q, r) { return units.find(u => u.alive && u.q === q && u.r === r); }
+function inMap(q, r) { return q>=0 && q<COLS && r>=0 && r<ROWS && mapData.has(key(q,r)); }
+function key(q,r) { return `${q},${r}`; }
+function opposite(s) { return s === 'GER' ? 'SOV' : 'GER'; }
+
+function neighbors(q, r) {
+  return [{q:q+1,r},{q:q+1,r:r-1},{q,r:r-1},{q:q-1,r},{q:q-1,r:r+1},{q,r:r+1}];
+}
+
+function hexToPixel(q, r) {
+  return {
+    x: originX + hexSize * (Math.sqrt(3) * q + Math.sqrt(3)/2 * r),
+    y: originY + hexSize * (1.5 * r)
+  };
+}
+
+function pixelToHex(px, py) {
+  const x = (px - originX) / hexSize;
+  const y = (py - originY) / hexSize;
+  const q = Math.sqrt(3)/3 * x - 1/3 * y;
+  const r = 2/3 * y;
+  return cubeRound(q, r);
+}
+
+function cubeRound(q, r) {
+  let x = q, z = r, y = -x-z;
+  let rx = Math.round(x), ry = Math.round(y), rz = Math.round(z);
+  let dx = Math.abs(rx - x), dy = Math.abs(ry - y), dz = Math.abs(rz - z);
+  if (dx > dy && dx > dz) rx = -ry-rz;
+  else if (dy > dz) ry = -rx-rz;
+  else rz = -rx-ry;
+  return { q:rx, r:rz };
+}
+
+function hexShape(cx, cy) {
+  beginShape();
+  for (let i=0;i<6;i++) {
+    const a = TWO_PI * (i + .5) / 6;
+    vertex(cx + hexSize * cos(a), cy + hexSize * sin(a));
+  }
+  endShape(CLOSE);
+}
+
+function hexDist(q1,r1,q2,r2) {
+  let x1=q1,z1=r1,y1=-x1-z1;
+  let x2=q2,z2=r2,y2=-x2-z2;
+  return max(abs(x1-x2), abs(y1-y2), abs(z1-z2));
+}
+
+function log(t) {
+  logs.push(t);
+  if (logs.length > 120) logs.shift();
+}
+</script>
 </body>
 </html>
