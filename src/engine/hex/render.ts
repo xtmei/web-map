@@ -1,4 +1,5 @@
 import type { Unit } from '../../game/units/model';
+import type { TerrainType } from '../../game/scenarios/types';
 import type { Axial } from './coords';
 import { axialToPixel } from './coords';
 
@@ -10,16 +11,26 @@ export interface HexStyle {
 
 const UNIT_TOKEN_SIZE_FACTOR = 0.52;
 
+const TERRAIN_STYLES: Record<TerrainType, { fill: string; stroke: string }> = {
+  clear: { fill: 'rgba(70, 70, 70, 0.6)', stroke: 'rgba(170, 170, 170, 0.45)' },
+  steppe: { fill: 'rgba(102, 115, 74, 0.72)', stroke: 'rgba(176, 194, 129, 0.5)' },
+  urban: { fill: 'rgba(98, 87, 79, 0.8)', stroke: 'rgba(196, 175, 149, 0.55)' },
+  river: { fill: 'rgba(55, 88, 134, 0.82)', stroke: 'rgba(126, 173, 227, 0.65)' }
+};
+
 export function drawHexGrid(
   ctx: CanvasRenderingContext2D,
   hexes: Axial[],
   size: number,
   style: HexStyle,
-  selected: Axial | null
+  selected: Axial | null,
+  terrainByHex: Map<string, TerrainType>
 ): void {
   for (const hex of hexes) {
     const center = axialToPixel(hex, size);
     const isSelected = selected?.q === hex.q && selected.r === hex.r;
+    const terrain = terrainByHex.get(`${hex.q},${hex.r}`) ?? 'clear';
+    const terrainStyle = TERRAIN_STYLES[terrain];
 
     ctx.beginPath();
     for (let i = 0; i < 6; i += 1) {
@@ -34,8 +45,8 @@ export function drawHexGrid(
     }
     ctx.closePath();
 
-    ctx.fillStyle = isSelected ? '#5d3628' : style.fill;
-    ctx.strokeStyle = isSelected ? '#ffd38f' : style.stroke;
+    ctx.fillStyle = isSelected ? '#5d3628' : terrainStyle?.fill ?? style.fill;
+    ctx.strokeStyle = isSelected ? '#ffd38f' : terrainStyle?.stroke ?? style.stroke;
     ctx.lineWidth = isSelected ? style.lineWidth * 1.75 : style.lineWidth;
     ctx.fill();
     ctx.stroke();

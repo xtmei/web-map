@@ -57,6 +57,7 @@ body {
 .side-toggle button,
 #clear-selection,
 .formation-select-label select,
+#scenario-select,
 .unit-panel__close {
   min-height: 40px;
   border-radius: 10px;
@@ -200,4 +201,15 @@ body {
   .hud {
     max-width: calc(100vw - 24px);
   }
+}
+
+
+.hud__error {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 163, 163, 0.7);
+  background: rgba(115, 34, 34, 0.55);
+  color: #ffd6d6;
+  font-weight: 600;
 }

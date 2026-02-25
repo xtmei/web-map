@@ -5,18 +5,20 @@ import { createHexDisc } from './engine/hex/grid';
 import { drawHexGrid, drawUnits, getUnitTokenRadius } from './engine/hex/render';
 import { CanvasSurface } from './engine/render/canvas';
 import {
+  applyScenarioToState,
+  createInitialState,
   getAvailableFormations,
   getSelectedUnit,
-  getUnitsForFormation,
-  initialGameState
+  getUnitsForFormation
 } from './game/state';
+import { getScenarioOptions, loadScenario } from './game/scenarios/loader';
 import type { Side } from './game/units/model';
 import { createControls } from './ui/controls';
 import { renderHud } from './ui/hud';
 import { createUnitPanel } from './ui/panel';
 
 const HEX_SIZE = 28;
-const GRID_RADIUS = 21;
+const FALLBACK_GRID_RADIUS = 21;
 
 const canvas = document.querySelector<HTMLCanvasElement>('#app-canvas');
 const hud = document.querySelector<HTMLDivElement>('#hud');
@@ -34,8 +36,9 @@ const panelRootEl = panelRoot;
 
 const surface = new CanvasSurface(canvasEl);
 const camera = new Camera();
-const hexes = createHexDisc(GRID_RADIUS);
-const gameState = structuredClone(initialGameState);
+const gameState = createInitialState();
+const scenarioOptions = getScenarioOptions();
+let hexes = createHexDisc(FALLBACK_GRID_RADIUS);
 
 camera.x = canvasEl.clientWidth / 2;
 camera.y = canvasEl.clientHeight / 2;
@@ -50,6 +53,8 @@ function setSide(side: Side): void {
 function renderUi(): void {
   const formations = getAvailableFormations(gameState.units, gameState.selectedSide);
   controls.render({
+    selectedScenarioId: gameState.scenarioId,
+    scenarios: scenarioOptions,
     selectedSide: gameState.selectedSide,
     selectedFormationId: gameState.selectedFormationId,
     formations
@@ -60,7 +65,25 @@ function renderUi(): void {
   renderHud(hudEl, gameState);
 }
 
+async function switchScenario(scenarioId: string): Promise<void> {
+  gameState.errorMessage = null;
+
+  try {
+    const scenario = await loadScenario(scenarioId);
+    applyScenarioToState(gameState, scenario);
+    hexes = createHexDisc(scenario.meta.mapRadius);
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    gameState.errorMessage = reason;
+  }
+
+  renderUi();
+}
+
 const controls = createControls(controlsRootEl, {
+  onScenarioChange(scenarioId) {
+    void switchScenario(scenarioId);
+  },
   onSideChange(side) {
     setSide(side);
     renderUi();
@@ -104,7 +127,7 @@ new InputController(
   }
 );
 
-renderUi();
+void switchScenario(scenarioOptions[0]?.id ?? '');
 
 function frame(): void {
   surface.clear();
@@ -119,7 +142,8 @@ function frame(): void {
       stroke: 'rgba(170, 170, 170, 0.45)',
       lineWidth: 1.1
     },
-    gameState.selectedHex
+    gameState.selectedHex,
+    gameState.terrainByHex
   );
 
   drawUnits(

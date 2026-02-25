@@ -1,6 +1,6 @@
 import type { Axial } from '../engine/hex/coords';
-import { demoUnits } from './data/demo_units';
 import type { Side, Unit } from './units/model';
+import type { ScenarioDefinition, TerrainType } from './scenarios/types';
 
 export interface FormationOption {
   id: string;
@@ -8,11 +8,15 @@ export interface FormationOption {
 }
 
 export interface GameState {
+  scenarioId: string;
+  scenarioName: string;
   selectedSide: Side;
   selectedFormationId: string;
   selectedHex: Axial | null;
   selectedUnitId: string | null;
   units: Unit[];
+  terrainByHex: Map<string, TerrainType>;
+  errorMessage: string | null;
 }
 
 export function getAvailableFormations(units: Unit[], side: Side): FormationOption[] {
@@ -39,13 +43,38 @@ export function getSelectedUnit(units: Unit[], selectedUnitId: string | null): U
   return units.find((unit) => unit.id === selectedUnitId) ?? null;
 }
 
-const initialSide: Side = 'Axis';
-const initialFormation = getAvailableFormations(demoUnits, initialSide)[0]?.id ?? '';
+function toTerrainMap(definition: ScenarioDefinition): Map<string, TerrainType> {
+  const result = new Map<string, TerrainType>();
+  for (const hex of definition.map.terrain) {
+    result.set(`${hex.q},${hex.r}`, hex.type);
+  }
+  return result;
+}
 
-export const initialGameState: GameState = {
-  selectedSide: initialSide,
-  selectedFormationId: initialFormation,
-  selectedHex: null,
-  selectedUnitId: null,
-  units: demoUnits
-};
+export function applyScenarioToState(state: GameState, definition: ScenarioDefinition): void {
+  state.scenarioId = definition.meta.id;
+  state.scenarioName = definition.meta.name;
+  state.selectedSide = definition.meta.defaultSide;
+  state.units = definition.units;
+  state.selectedHex = null;
+  state.selectedUnitId = null;
+  state.terrainByHex = toTerrainMap(definition);
+  state.errorMessage = null;
+
+  const formations = getAvailableFormations(state.units, state.selectedSide);
+  state.selectedFormationId = formations[0]?.id ?? '';
+}
+
+export function createInitialState(): GameState {
+  return {
+    scenarioId: '',
+    scenarioName: '',
+    selectedSide: 'Axis',
+    selectedFormationId: '',
+    selectedHex: null,
+    selectedUnitId: null,
+    units: [],
+    terrainByHex: new Map(),
+    errorMessage: null
+  };
+}
