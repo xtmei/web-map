@@ -3,125 +3,243 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>斯大林格勒：战术指挥官（p5.js）</title>
+  <title>斯大林格勒：钢铁战线指挥图</title>
   <script src="https://cdn.jsdelivr.net/npm/p5@1.9.4/lib/p5.min.js"></script>
   <style>
     :root {
       color-scheme: dark;
-      --bg: #070b15;
-      --panel: #111a2b;
-      --panel2: #0d1423;
-      --line: #25344f;
-      --text: #e6edf9;
-      --sub: #9fb2d6;
-      --axis: #e8c66a;
-      --sov: #e46a6a;
-      --ok: #56d364;
-      --warn: #ffb86b;
+      --bg: #17140f;
+      --bg-2: #1f1b15;
+      --panel: rgba(27, 23, 18, 0.88);
+      --panel-2: rgba(17, 14, 11, 0.9);
+      --line: #8b7548;
+      --line-2: #4c3f27;
+      --text: #d8cfb7;
+      --sub: #a79b7c;
+      --axis: #d9be74;
+      --sov: #d07f72;
+      --ok: #8bb06a;
+      --warn: #be5a4c;
+      --scan: rgba(255, 240, 198, 0.045);
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      background: radial-gradient(circle at 20% 0%, #0f1d36, var(--bg) 45%);
-      font-family: "Noto Sans SC", "Microsoft YaHei", system-ui, sans-serif;
+      background:
+        radial-gradient(circle at 18% -8%, #3a3120 0%, rgba(58, 49, 32, 0) 45%),
+        radial-gradient(circle at 88% 12%, #3a2a1f 0%, rgba(58, 42, 31, 0) 34%),
+        linear-gradient(180deg, var(--bg-2), var(--bg));
       color: var(--text);
+      font-family: "Courier New", "Consolas", "Lucida Console", "Noto Sans SC", monospace;
       overflow: hidden;
       overscroll-behavior: none;
+      letter-spacing: 0.2px;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        repeating-linear-gradient(180deg, transparent 0, transparent 3px, var(--scan) 3px, var(--scan) 4px),
+        repeating-linear-gradient(90deg, rgba(255, 235, 190, 0.02) 0, rgba(255, 235, 190, 0.02) 1px, transparent 1px, transparent 5px);
+      z-index: 20;
+      mix-blend-mode: soft-light;
     }
     canvas {
       display: block;
       touch-action: none;
+      filter: saturate(0.9) contrast(1.04);
     }
     #ui {
       position: fixed;
       inset: 0;
       pointer-events: none;
       display: grid;
-      grid-template-columns: min(350px, 32vw) 1fr min(350px, 30vw);
+      grid-template-columns: min(332px, 32vw) 1fr min(332px, 32vw);
       grid-template-rows: 1fr auto;
       gap: 10px;
       padding: calc(10px + env(safe-area-inset-top)) 10px calc(10px + env(safe-area-inset-bottom));
+      z-index: 5;
     }
     .panel {
       pointer-events: auto;
-      background: linear-gradient(160deg, rgba(18, 28, 45, .9), rgba(10, 14, 22, .92));
+      background:
+        linear-gradient(180deg, rgba(255, 221, 159, 0.06), rgba(0, 0, 0, 0)),
+        linear-gradient(165deg, var(--panel), var(--panel-2));
       border: 1px solid var(--line);
-      border-radius: 12px;
-      backdrop-filter: blur(10px);
-      box-shadow: 0 12px 40px rgba(0,0,0,.35);
+      box-shadow:
+        inset 0 0 0 1px rgba(255, 214, 127, 0.08),
+        0 12px 28px rgba(0, 0, 0, 0.42);
+      border-radius: 2px;
       overflow: hidden;
     }
-    #leftPanel, #rightPanel { padding: 12px; overflow: auto; }
+    #leftPanel, #rightPanel {
+      padding: 12px;
+      overflow: auto;
+      scrollbar-color: #6f5c37 #1b1712;
+    }
     #rightPanel { grid-column: 3; }
     #bottomBar {
       grid-column: 1 / span 3;
       display: grid;
-      grid-template-columns: repeat(8, minmax(80px, 1fr));
+      grid-template-columns: repeat(8, minmax(76px, 1fr));
       gap: 8px;
-      padding: 10px;
+      padding: 8px;
+      background:
+        linear-gradient(180deg, rgba(223, 179, 102, 0.1), rgba(0, 0, 0, 0)),
+        rgba(14, 12, 9, 0.9);
+      border-top: 1px solid var(--line);
     }
     .btn {
-      border: 1px solid #38507c;
-      background: linear-gradient(180deg, #223862, #172845);
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(180deg, rgba(223, 179, 102, 0.26), rgba(68, 52, 28, 0.3)),
+        linear-gradient(180deg, #2f2719, #241d14);
       color: var(--text);
-      border-radius: 10px;
-      padding: 8px;
-      font-weight: 700;
-      font-size: 14px;
+      border-radius: 2px;
+      padding: 8px 8px;
       min-height: 44px;
       cursor: pointer;
       pointer-events: auto;
-      transition: .16s;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
       touch-action: manipulation;
+      transition: filter .14s, transform .12s, box-shadow .12s;
+      box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.4);
     }
     .btn:hover { filter: brightness(1.1); }
-    .btn.active { outline: 2px solid #6ca7ff; }
-    .btn.warn { background: linear-gradient(180deg, #5a2f2f, #441f1f); border-color: #8f3f3f; }
-    h2 { margin: 0 0 8px; font-size: 18px; }
-    .muted { color: var(--sub); font-size: 13px; }
-    .stat {
-      display: flex; justify-content: space-between; align-items: center;
-      border-bottom: 1px dashed rgba(255,255,255,.12);
-      padding: 6px 0;
-      font-size: 13px;
+    .btn:active { transform: translateY(1px); }
+    .btn.active {
+      border-color: #ceb06b;
+      box-shadow:
+        0 0 0 1px rgba(232, 198, 106, 0.5),
+        inset 0 0 0 1px rgba(255, 232, 179, 0.28);
     }
-    .log { max-height: 240px; overflow: auto; font-size: 12px; line-height: 1.45; }
-    .log div { border-left: 2px solid #304a73; padding-left: 8px; margin: 6px 0; color: #c8d6f2; }
+    .btn.warn {
+      border-color: #a4554e;
+      background:
+        linear-gradient(180deg, rgba(208, 127, 114, 0.32), rgba(92, 43, 38, 0.36)),
+        linear-gradient(180deg, #3a211d, #271613);
+    }
+    h2 {
+      margin: 0 0 8px;
+      font-size: 18px;
+      line-height: 1.15;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+    h3 {
+      margin: 12px 0 6px;
+      font-size: 14px;
+      color: #ccb17a;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+    }
+    .muted {
+      color: var(--sub);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .stat {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px dashed rgba(203, 173, 113, 0.23);
+      padding: 6px 0;
+      font-size: 12px;
+      gap: 8px;
+    }
+    .stat span:first-child {
+      color: #cbb88e;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      flex: 1;
+    }
+    .stat span:last-child {
+      color: #e7dcc2;
+      text-align: right;
+      font-weight: 700;
+    }
+    .log {
+      max-height: 248px;
+      overflow: auto;
+      font-size: 12px;
+      line-height: 1.45;
+      padding-right: 4px;
+      scrollbar-color: #6f5c37 #1b1712;
+    }
+    .log div {
+      border-left: 2px solid #6e5a35;
+      padding-left: 8px;
+      margin: 7px 0;
+      color: #d6c9ad;
+    }
     .titleSide-GER { color: var(--axis); }
     .titleSide-SOV { color: var(--sov); }
-    .tag { padding: 2px 8px; border-radius: 999px; font-size: 12px; background: #1d2d49; border: 1px solid #31507d; }
+    .tag {
+      padding: 2px 8px;
+      border-radius: 2px;
+      font-size: 11px;
+      border: 1px solid #6f5f3f;
+      background: rgba(70, 57, 35, 0.7);
+      color: #ead9b0;
+    }
     #startOverlay {
-      position: fixed; inset: 0;
-      background: rgba(4, 7, 12, .84);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 10;
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(10, 8, 6, 0.86);
+      z-index: 12;
+      backdrop-filter: blur(3px);
     }
     .card {
-      width: min(92vw, 560px);
-      background: var(--panel2);
+      width: min(92vw, 590px);
+      background:
+        linear-gradient(180deg, rgba(227, 191, 119, 0.09), rgba(0, 0, 0, 0)),
+        #1a1510;
       border: 1px solid var(--line);
-      border-radius: 16px;
+      border-radius: 2px;
+      box-shadow:
+        inset 0 0 0 1px rgba(247, 220, 164, 0.08),
+        0 12px 48px rgba(0, 0, 0, 0.45);
       padding: 18px;
     }
-    .row { display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0; }
+    .row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 12px 0;
+    }
     select {
-      padding: 8px; border-radius: 8px; background: #111c30; border: 1px solid #2d4468; color: var(--text);
+      padding: 8px 10px;
+      border-radius: 2px;
+      border: 1px solid #7f6940;
+      background: #1e1812;
+      color: var(--text);
+      font-family: inherit;
     }
     #mobileToggles {
       position: fixed;
-      top: calc(10px + env(safe-area-inset-top));
-      right: 10px;
+      top: calc(8px + env(safe-area-inset-top));
+      right: 8px;
       z-index: 9;
       display: none;
       gap: 8px;
       pointer-events: auto;
     }
     #mobileToggles .btn {
-      min-width: 72px;
-      padding: 8px 10px;
-      font-size: 12px;
+      min-width: 76px;
+      min-height: 38px;
+      padding: 6px 10px;
+      font-size: 11px;
     }
-    @media (max-width: 980px) {
+    @media (max-width: 1100px) {
       #ui {
         grid-template-columns: 1fr;
         grid-template-rows: 1fr;
@@ -132,8 +250,8 @@
         position: fixed;
         left: 8px;
         right: 8px;
-        bottom: calc(124px + env(safe-area-inset-bottom));
-        max-height: 44vh;
+        bottom: calc(132px + env(safe-area-inset-bottom));
+        max-height: 50vh;
         z-index: 8;
       }
       body.mobile-show-left #leftPanel,
@@ -148,11 +266,32 @@
         grid-column: 1;
         grid-template-columns: repeat(4, minmax(0, 1fr));
       }
+      #mobileToggles { display: flex; }
+      .btn { font-size: 12px; }
+    }
+    @media (max-width: 760px) and (orientation: portrait) {
       #mobileToggles {
-        display: flex;
+        left: 8px;
+        right: 8px;
+        top: calc(8px + env(safe-area-inset-top));
+        justify-content: space-between;
       }
-      .btn {
-        font-size: 13px;
+      #mobileToggles .btn {
+        flex: 1;
+        min-width: 0;
+      }
+      #leftPanel, #rightPanel {
+        bottom: calc(196px + env(safe-area-inset-bottom));
+        max-height: 56vh;
+      }
+      #bottomBar {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 7px;
+        padding: 7px;
+      }
+      #bottomBar .btn {
+        min-height: 48px;
+        font-size: 12px;
       }
     }
   </style>
@@ -160,8 +299,8 @@
 <body>
   <div id="startOverlay">
     <div class="card">
-      <h2>斯大林格勒：战术指挥官</h2>
-      <p class="muted">升级版玩法：目标点控制、补给、ZOC、战斗士气、AI 回合、胜负判定。你将指挥营级战斗群进行多回合会战。</p>
+      <h2>斯大林格勒：钢铁战线指挥图</h2>
+      <p class="muted">战区已升级为高精度作战图：多区块地形、曲线河道、桥头与铁路骨架。以回合制方式争夺关键节点并维持补给线。</p>
       <div class="row">
         <label>玩家阵营
           <select id="pickSide"><option value="GER">德军（先手）</option><option value="SOV">苏军</option></select>
@@ -170,42 +309,43 @@
           <select id="pickDiff"><option value="normal">正常</option><option value="hard">困难</option></select>
         </label>
       </div>
-      <button id="startBtn" class="btn">开始战役</button>
+      <button id="startBtn" class="btn">进入指挥席</button>
     </div>
   </div>
 
   <div id="mobileToggles">
-    <button class="btn" id="btnPanelLeft">态势</button>
+    <button class="btn" id="btnPanelLeft">战况</button>
     <button class="btn" id="btnPanelRight">单位</button>
-    <button class="btn" id="btnFit">适配</button>
+    <button class="btn" id="btnFit">居中</button>
   </div>
 
   <div id="ui">
     <aside id="leftPanel" class="panel"></aside>
     <aside id="rightPanel" class="panel"></aside>
     <footer id="bottomBar" class="panel">
-      <button class="btn active" data-mode="MOVE">移动</button>
-      <button class="btn" data-mode="ATTACK">攻击</button>
-      <button class="btn" data-mode="BOMBARD">炮击</button>
-      <button class="btn" data-mode="FORTIFY">构筑</button>
+      <button class="btn active" data-mode="MOVE">机动</button>
+      <button class="btn" data-mode="ATTACK">突击</button>
+      <button class="btn" data-mode="BOMBARD">火力</button>
+      <button class="btn" data-mode="FORTIFY">筑垒</button>
       <button class="btn" id="btnSupply">补给</button>
       <button class="btn" id="btnCenter">定位单位</button>
-      <button class="btn warn" id="btnEnd">结束回合</button>
-      <button class="btn" id="btnRestart">重开</button>
+      <button class="btn warn" id="btnEnd">回合结束</button>
+      <button class="btn" id="btnRestart">重置战区</button>
     </footer>
   </div>
 
 <script>
 let W, H;
-let hexSize = 30;
-let originX = 24;
-let originY = 28;
-const COLS = 14;
-const ROWS = 10;
-const MIN_ZOOM = 0.62;
-const MAX_ZOOM = 1.85;
+let hexSize = 20;
+let originX = 18;
+let originY = 20;
+const COLS = 40;
+const ROWS = 28;
+const MIN_ZOOM = 0.28;
+const MAX_ZOOM = 2.35;
 const CAMERA_MARGIN = 18;
 const TAP_DRAG_THRESHOLD = 8;
+const MAP_TIER = '战区级精度';
 
 const camera = { x: 0, y: 0, zoom: 1 };
 const gesture = {
@@ -225,28 +365,42 @@ let uiDirty = true;
 let reachableCache = { key: '', tiles: [] };
 
 const TERRAIN = {
-  STEPPE: { name: '草原', cost: 1, def: 0, color: [65, 90, 74] },
-  CITY: { name: '城区', cost: 2, def: 2, color: [96, 96, 105] },
-  INDUSTRY: { name: '工业区', cost: 2, def: 3, color: [114, 92, 84] },
-  HILL: { name: '高地', cost: 2, def: 1, color: [92, 110, 86] },
-  RAIL: { name: '铁路', cost: 1, def: 0, color: [120, 120, 126] },
-  RIVER: { name: '伏尔加河', cost: 99, def: 0, color: [48, 78, 140] },
-  BRIDGE: { name: '桥梁', cost: 1, def: 0, color: [155, 128, 77] },
-  EAST: { name: '东岸', cost: 1, def: 0, color: [72, 85, 82] }
+  STEPPE: { name: '草原', cost: 1, def: 0, color: [92, 106, 71] },
+  SUBURB: { name: '城郊', cost: 1, def: 1, color: [111, 102, 83] },
+  CITY: { name: '城区', cost: 2, def: 2, color: [114, 111, 101] },
+  RUINS: { name: '废墟', cost: 2, def: 3, color: [126, 105, 88] },
+  INDUSTRY: { name: '工业带', cost: 2, def: 3, color: [129, 100, 77] },
+  HILL: { name: '高地', cost: 2, def: 2, color: [98, 108, 86] },
+  RIDGE: { name: '棱线', cost: 3, def: 3, color: [86, 92, 75] },
+  ROAD: { name: '公路', cost: 1, def: 0, color: [135, 119, 86] },
+  RAIL: { name: '铁路', cost: 1, def: 1, color: [122, 116, 102] },
+  RIVER: { name: '伏尔加河', cost: 99, def: 0, color: [59, 86, 124] },
+  BRIDGE: { name: '桥梁', cost: 1, def: 0, color: [168, 137, 90] },
+  PORT: { name: '渡口', cost: 1, def: 1, color: [99, 111, 121] },
+  EAST: { name: '东岸', cost: 1, def: 1, color: [88, 100, 89] }
 };
 
 let objectives = [
-  { id: 'KURGAN', q: 4, r: 4, vp: 2, name: '马马耶夫岗', owner: null },
-  { id: 'STATION', q: 3, r: 3, vp: 2, name: '火车站', owner: null },
-  { id: 'REDOCT', q: 5, r: 5, vp: 3, name: '红十月工厂', owner: null },
-  { id: 'LANDING', q: 8, r: 4, vp: 2, name: '中央渡口', owner: null },
-  { id: 'ELEVATOR', q: 2, r: 7, vp: 2, name: '粮仓', owner: null }
+  { id: 'MAMAYEV', q: 14, r: 12, vp: 3, name: '马马耶夫岗', owner: null },
+  { id: 'STATION', q: 12, r: 11, vp: 2, name: '中央火车站', owner: null },
+  { id: 'REDOCT', q: 18, r: 14, vp: 3, name: '红十月工厂', owner: null },
+  { id: 'BARRIKADY', q: 20, r: 11, vp: 3, name: '街垒工厂', owner: null },
+  { id: 'ELEVATOR', q: 11, r: 17, vp: 2, name: '粮仓高地', owner: null },
+  { id: 'LANDING', q: 27, r: 13, vp: 2, name: '中央渡口', owner: null },
+  { id: 'NORTHRIDGE', q: 16, r: 7, vp: 2, name: '北部棱线', owner: null },
+  { id: 'SOUTHCROSS', q: 16, r: 20, vp: 2, name: '南部十字路', owner: null }
 ];
 
 const mapData = new Map();
 const units = [];
 let selected = null;
 let mode = 'MOVE';
+const MODE_NAMES = {
+  MOVE: '机动',
+  ATTACK: '突击',
+  BOMBARD: '火力',
+  FORTIFY: '筑垒'
+};
 let logs = [];
 let gameOver = false;
 
@@ -256,7 +410,7 @@ let state = {
   playerSide: 'GER',
   aiSide: 'SOV',
   difficulty: 'normal',
-  maxTurn: 14,
+  maxTurn: 18,
   vp: { GER: 0, SOV: 0 },
   support: { GER: { arty: 1, air: 1, supply: 1 }, SOV: { arty: 1, air: 0, supply: 1 } }
 };
@@ -287,10 +441,13 @@ function windowResized() {
 }
 
 function recalcScale() {
-  const base = min(W, H);
-  hexSize = floor(constrain(base / 22, 19, 34));
-  originX = 24;
-  originY = 28;
+  const base = min(W, playableHeight());
+  const portrait = isPortraitPhone();
+  const density = isMobileLayout() ? (portrait ? 47 : 43) : 40;
+  const maxHex = isMobileLayout() ? (portrait ? 18 : 21) : 24;
+  hexSize = floor(constrain(base / density, 11, maxHex));
+  originX = isMobileLayout() ? 12 : 16;
+  originY = isMobileLayout() ? 14 : 16;
   invalidateReachableCache();
 }
 
@@ -338,13 +495,19 @@ function resetGame() {
   setMode('MOVE');
   invalidateReachableCache();
 
-  addUnit({ side: 'GER', name: '71步兵师 / I营', q: 0, r: 3, atk: 7, def: 6, mp: 5, hp: 6, morale: 7, army: '6集团军' });
-  addUnit({ side: 'GER', name: '24装甲师 / 战斗群', q: 1, r: 5, atk: 9, def: 6, mp: 6, hp: 5, morale: 7, armor: 1, army: '6集团军' });
-  addUnit({ side: 'GER', name: '100猎兵师 / I营', q: 0, r: 7, atk: 7, def: 7, mp: 5, hp: 6, morale: 8, army: '6集团军' });
+  addUnit({ side: 'GER', name: '71步兵师 / I营', q: 3, r: 10, atk: 7, def: 6, mp: 5, hp: 6, morale: 7, army: '6集团军' });
+  addUnit({ side: 'GER', name: '24装甲师 / 战斗群', q: 5, r: 13, atk: 9, def: 6, mp: 7, hp: 5, morale: 7, armor: 1, army: '6集团军' });
+  addUnit({ side: 'GER', name: '100猎兵师 / I营', q: 4, r: 17, atk: 7, def: 7, mp: 5, hp: 6, morale: 8, army: '6集团军' });
+  addUnit({ side: 'GER', name: '305步兵师 / II营', q: 2, r: 14, atk: 6, def: 6, mp: 5, hp: 6, morale: 6, army: '6集团军' });
+  addUnit({ side: 'GER', name: '14装甲师 / 先遣连', q: 6, r: 9, atk: 8, def: 6, mp: 6, hp: 5, morale: 7, armor: 1, army: '6集团军' });
+  addUnit({ side: 'GER', name: '94步兵师 / 城区群', q: 3, r: 20, atk: 7, def: 7, mp: 5, hp: 6, morale: 7, army: '6集团军' });
 
-  addUnit({ side: 'SOV', name: '62集团军 / NKVD营', q: 7, r: 4, atk: 7, def: 8, mp: 5, hp: 6, morale: 8, army: '62集团军' });
-  addUnit({ side: 'SOV', name: '13近卫师 / II营', q: 12, r: 3, atk: 8, def: 7, mp: 5, hp: 6, morale: 8, army: '62集团军' });
-  addUnit({ side: 'SOV', name: '海军步兵营', q: 12, r: 6, atk: 8, def: 6, mp: 5, hp: 5, morale: 7, army: '62集团军' });
+  addUnit({ side: 'SOV', name: '62集团军 / NKVD营', q: 24, r: 13, atk: 7, def: 8, mp: 5, hp: 6, morale: 8, army: '62集团军' });
+  addUnit({ side: 'SOV', name: '13近卫师 / II营', q: 33, r: 11, atk: 8, def: 7, mp: 5, hp: 6, morale: 8, army: '62集团军' });
+  addUnit({ side: 'SOV', name: '海军步兵营', q: 34, r: 16, atk: 8, def: 6, mp: 5, hp: 5, morale: 7, army: '62集团军' });
+  addUnit({ side: 'SOV', name: '284步兵师 / 街区守备', q: 22, r: 11, atk: 7, def: 8, mp: 5, hp: 6, morale: 8, army: '62集团军' });
+  addUnit({ side: 'SOV', name: '37近卫师 / 反击群', q: 28, r: 18, atk: 8, def: 7, mp: 5, hp: 6, morale: 8, army: '64集团军' });
+  addUnit({ side: 'SOV', name: '工人民兵 / 北工厂', q: 23, r: 9, atk: 6, def: 7, mp: 5, hp: 5, morale: 6, army: '工人营' });
 
   refreshSide();
   log('战役开始：占领目标点并坚持到终局。');
@@ -353,19 +516,95 @@ function resetGame() {
 
 function initMap() {
   mapData.clear();
+  const cityCenterQ = floor(COLS * 0.43);
+  const cityCenterR = floor(ROWS * 0.5);
+  const bridgeRows = [6, 10, 13, 17, 21];
+  const railRows = [9, 14];
+  const roadColumns = [cityCenterQ - 7, cityCenterQ + 1, cityCenterQ + 6];
+
   for (let r = 0; r < ROWS; r++) {
+    const riverCenter = floor(COLS * 0.66 + sin(r * 0.36) * 1.6 + sin(r * 0.13 + 0.8) * 0.9);
     for (let q = 0; q < COLS; q++) {
+      const urbanDist = hexDist(q, r, cityCenterQ, cityCenterR);
+      const isRiver = q === riverCenter || q === riverCenter + 1;
+      const eastBankStart = riverCenter + 2;
+      const isEast = q >= eastBankStart;
+      const nearRiver = q >= riverCenter - 1 && q <= riverCenter + 2;
+      const northRidge = r <= 6 && q >= cityCenterQ - 6 && q <= cityCenterQ + 7;
+      const southRidge = r >= ROWS - 6 && q >= cityCenterQ - 5 && q <= cityCenterQ + 6;
+
       let t = TERRAIN.STEPPE;
-      if (q >= 9) t = TERRAIN.RIVER;
-      if (q >= 11) t = TERRAIN.EAST;
-      if ((q === 9 && r === 3) || (q === 9 && r === 6)) t = TERRAIN.BRIDGE;
-      if (q >= 2 && q <= 8 && r >= 2 && r <= 8) t = TERRAIN.CITY;
-      if ((q === 5 && r === 5) || (q === 5 && r === 6) || (q === 6 && r === 5)) t = TERRAIN.INDUSTRY;
-      if ((r === 3 && q >= 1 && q <= 8) || (r === 4 && q >= 2 && q <= 8)) {
-        if (t !== TERRAIN.RIVER && t !== TERRAIN.EAST) t = TERRAIN.RAIL;
+      let district = '外围草原';
+
+      if (isRiver) {
+        t = TERRAIN.RIVER;
+        district = '伏尔加主河道';
+      } else if (isEast) {
+        t = TERRAIN.EAST;
+        district = '东岸滩头';
+        if (abs(q - eastBankStart) <= 1 && (r % 6 === 1 || r % 6 === 4)) {
+          t = TERRAIN.PORT;
+          district = '东岸渡口';
+        }
+      } else if (urbanDist <= 4) {
+        t = (q + r) % 2 === 0 ? TERRAIN.INDUSTRY : TERRAIN.RUINS;
+        district = '核心工业区';
+      } else if (urbanDist <= 8) {
+        t = (q * 3 + r * 5) % 4 === 0 ? TERRAIN.RUINS : TERRAIN.CITY;
+        district = '中心城区';
+      } else if (urbanDist <= 12) {
+        t = TERRAIN.SUBURB;
+        district = '外围城区';
+      } else if (nearRiver) {
+        t = TERRAIN.SUBURB;
+        district = '西岸堤区';
       }
-      if (q === 4 && r === 4) t = TERRAIN.HILL;
-      mapData.set(key(q, r), { q, r, terrain: t });
+
+      if (!isRiver && !isEast && (northRidge || southRidge) && urbanDist >= 7) {
+        t = TERRAIN.RIDGE;
+        district = northRidge ? '北部棱线' : '南部棱线';
+      }
+
+      if (!isRiver && !isEast && urbanDist >= 11 && abs(q - (cityCenterQ - 11 + floor(r / 3))) <= 1 && r % 4 !== 0) {
+        t = TERRAIN.ROAD;
+        district = '西侧公路网';
+      }
+
+      if (!isRiver && !isEast && railRows.includes(r) && q >= 2 && q <= riverCenter - 2) {
+        t = TERRAIN.RAIL;
+        district = '横向铁路走廊';
+      }
+
+      if (!isRiver && !isEast && roadColumns.some(c => abs(c - q) <= 1) && r >= 4 && r <= ROWS - 4) {
+        t = TERRAIN.ROAD;
+        if (district === '外围草原') district = '南北公路线';
+      }
+
+      if (!isRiver && !isEast && hexDist(q, r, 14, 12) <= 2) {
+        t = TERRAIN.HILL;
+        district = '马马耶夫制高点';
+      }
+
+      if (bridgeRows.includes(r) && (q === riverCenter || q === riverCenter + 1)) {
+        t = TERRAIN.BRIDGE;
+        district = '桥梁要冲';
+      }
+
+      const elevNoise = floor(
+        2
+        + 1.8 * sin((q + r * 0.6) * 0.41)
+        + 1.2 * cos((q * 0.72 - r) * 0.29)
+      );
+      const elevation = constrain(
+        elevNoise
+          + (t === TERRAIN.HILL ? 3 : 0)
+          + (t === TERRAIN.RIDGE ? 2 : 0)
+          - (t === TERRAIN.RIVER ? 3 : 0),
+        0,
+        8
+      );
+
+      mapData.set(tileKey(q, r), { q, r, terrain: t, district, elevation, riverCenter });
     }
   }
 }
@@ -385,13 +624,15 @@ function addUnit(u) {
 
 function draw() {
   clear();
-  background(10, 14, 24);
+  background(21, 17, 12);
 
   push();
   translate(camera.x, camera.y);
   scale(camera.zoom);
   drawHexes();
+  drawTerrainDetails();
   drawObjectiveOverlay();
+  drawMapFrame();
   drawUnits();
   drawSelectionOverlay();
   pop();
@@ -406,33 +647,136 @@ function draw() {
 function drawHexes() {
   for (let r = 0; r < ROWS; r++) {
     for (let q = 0; q < COLS; q++) {
-      const c = mapData.get(key(q, r));
+      const c = mapData.get(tileKey(q, r));
       if (!c) continue;
       const p = hexToPixel(q, r);
-      stroke(30, 40, 60);
-      strokeWeight(1.4);
-      fill(...c.terrain.color);
+      const [tr, tg, tb] = c.terrain.color;
+      const shade = c.elevation * 4;
+      stroke(76, 63, 41, 170);
+      strokeWeight(max(0.75, hexSize * 0.07));
+      fill(
+        constrain(tr + shade, 0, 255),
+        constrain(tg + shade * 0.8, 0, 255),
+        constrain(tb + shade * 0.6, 0, 255)
+      );
       hexShape(p.x, p.y);
-      fill(0, 80);
-      noStroke();
-      textSize(10);
-      text(c.terrain.name[0], p.x - 4, p.y + 4);
+      if (c.terrain === TERRAIN.RIVER) {
+        stroke(142, 177, 213, 120);
+        strokeWeight(max(0.6, hexSize * 0.06));
+        line(p.x - hexSize * 0.36, p.y + hexSize * 0.12, p.x + hexSize * 0.34, p.y - hexSize * 0.11);
+      }
+      if (hexSize >= 16 && q % 9 === 0 && r % 7 === 0) {
+        noStroke();
+        fill(248, 229, 180, 72);
+        textSize(8);
+        textAlign(CENTER, CENTER);
+        text(`${q}:${r}`, p.x, p.y + 1);
+      }
     }
   }
+  textAlign(LEFT, BASELINE);
+}
+
+function drawTerrainDetails() {
+  mapData.forEach(c => {
+    const p = hexToPixel(c.q, c.r);
+    if (c.terrain === TERRAIN.ROAD) {
+      stroke(176, 152, 104, 180);
+      strokeWeight(max(0.6, hexSize * 0.11));
+      line(p.x - hexSize * 0.42, p.y + hexSize * 0.1, p.x + hexSize * 0.42, p.y - hexSize * 0.1);
+    }
+    if (c.terrain === TERRAIN.RAIL) {
+      stroke(70, 65, 57, 220);
+      strokeWeight(max(0.5, hexSize * 0.08));
+      line(p.x - hexSize * 0.45, p.y - hexSize * 0.12, p.x + hexSize * 0.45, p.y - hexSize * 0.12);
+      line(p.x - hexSize * 0.45, p.y + hexSize * 0.12, p.x + hexSize * 0.45, p.y + hexSize * 0.12);
+      stroke(105, 92, 66, 180);
+      strokeWeight(max(0.4, hexSize * 0.04));
+      for (let i = -2; i <= 2; i++) {
+        const x = p.x + i * hexSize * 0.16;
+        line(x, p.y - hexSize * 0.18, x, p.y + hexSize * 0.18);
+      }
+    }
+    if (c.terrain === TERRAIN.BRIDGE) {
+      stroke(198, 161, 104, 210);
+      strokeWeight(max(0.9, hexSize * 0.13));
+      line(p.x - hexSize * 0.42, p.y, p.x + hexSize * 0.42, p.y);
+      stroke(120, 93, 55, 180);
+      strokeWeight(max(0.5, hexSize * 0.05));
+      line(p.x - hexSize * 0.26, p.y - hexSize * 0.18, p.x - hexSize * 0.26, p.y + hexSize * 0.18);
+      line(p.x + hexSize * 0.26, p.y - hexSize * 0.18, p.x + hexSize * 0.26, p.y + hexSize * 0.18);
+    }
+    if (c.terrain === TERRAIN.PORT) {
+      noFill();
+      stroke(155, 183, 207, 180);
+      strokeWeight(max(0.6, hexSize * 0.07));
+      arc(p.x, p.y, hexSize * 0.62, hexSize * 0.62, -PI * 0.08, PI + PI * 0.08);
+      line(p.x, p.y - hexSize * 0.31, p.x, p.y + hexSize * 0.04);
+    }
+  });
+  noStroke();
+}
+
+function drawMapFrame() {
+  const b = mapBounds();
+  noFill();
+  stroke(163, 132, 83, 185);
+  strokeWeight(1.8);
+  rect(b.minX, b.minY, b.width, b.height, 2);
+
+  noStroke();
+  fill(220, 198, 151, 210);
+  textAlign(LEFT, TOP);
+  textSize(max(10, hexSize * 0.34));
+  text(`STALINGRAD FRONT · ${COLS}x${ROWS} · ${MAP_TIER}`, b.minX + 8, b.minY + 7);
+
+  if (hexSize >= 12) {
+    textSize(max(8, hexSize * 0.25));
+    fill(198, 177, 132, 180);
+    for (let q = 0; q < COLS; q += 5) {
+      const t = hexToPixel(q, 0);
+      const bt = hexToPixel(q, ROWS - 1);
+      textAlign(CENTER, BOTTOM);
+      text(q, t.x, b.minY - 4);
+      textAlign(CENTER, TOP);
+      text(q, bt.x, b.maxY + 4);
+    }
+    for (let r = 0; r < ROWS; r += 4) {
+      const l = hexToPixel(0, r);
+      const rt = hexToPixel(COLS - 1, r);
+      textAlign(RIGHT, CENTER);
+      text(r, b.minX - 4, l.y);
+      textAlign(LEFT, CENTER);
+      text(r, b.maxX + 4, rt.y);
+    }
+  }
+  textAlign(LEFT, BASELINE);
 }
 
 function drawObjectiveOverlay() {
   objectives.forEach(o => {
     const p = hexToPixel(o.q, o.r);
+    const ownerColor = o.owner === 'GER' ? color(218, 190, 110) : o.owner === 'SOV' ? color(207, 123, 108) : color(190, 182, 164);
+    const ring = hexSize * 1.1;
     noFill();
-    stroke(o.owner === 'GER' ? '#e8c66a' : o.owner === 'SOV' ? '#e46a6a' : '#b8c5de');
-    strokeWeight(2);
-    circle(p.x, p.y, hexSize * 1.2);
+    stroke(ownerColor);
+    strokeWeight(max(1.2, hexSize * 0.1));
+    circle(p.x, p.y, ring);
+    stroke(241, 228, 189, 120);
+    strokeWeight(max(0.4, hexSize * 0.04));
+    line(p.x - ring * 0.22, p.y, p.x + ring * 0.22, p.y);
+    line(p.x, p.y - ring * 0.22, p.x, p.y + ring * 0.22);
+
     noStroke();
-    fill(245);
-    textSize(10);
+    fill(245, 233, 200);
+    textSize(max(8, hexSize * 0.3));
     textAlign(CENTER, CENTER);
     text(`${o.vp}`, p.x, p.y);
+    if (hexSize >= 12) {
+      fill(227, 209, 167, 180);
+      textSize(max(7, hexSize * 0.22));
+      text(o.name.slice(0, 4), p.x, p.y + hexSize * 0.52);
+    }
   });
   textAlign(LEFT, BASELINE);
 }
@@ -440,27 +784,41 @@ function drawObjectiveOverlay() {
 function drawUnits() {
   units.filter(u => u.alive).forEach(u => {
     const p = hexToPixel(u.q, u.r);
-    const base = u.side === 'GER' ? color(224, 193, 106) : color(208, 99, 99);
-    fill(red(base), green(base), blue(base), u.side === state.active ? 255 : 180);
-    stroke(0, 140);
+    const base = u.side === 'GER' ? color(218, 188, 115) : color(194, 113, 103);
+    const activeBoost = u.side === state.active ? 1 : 0.82;
+    fill(red(base) * activeBoost, green(base) * activeBoost, blue(base) * activeBoost, 240);
+    stroke(33, 27, 19, 175);
+    strokeWeight(max(0.7, hexSize * 0.08));
     rectMode(CENTER);
-    rect(p.x, p.y, hexSize * 1.6, hexSize * 0.9, 6);
+    rect(p.x, p.y, hexSize * 1.58, hexSize * 0.92, 2);
+
+    fill(35, 29, 22, 140);
+    noStroke();
+    rect(p.x, p.y - hexSize * 0.2, hexSize * 1.58, hexSize * 0.2, 1);
 
     if (selected && selected.id === u.id) {
       noFill();
-      stroke('#d5e7ff');
-      strokeWeight(2);
-      rect(p.x, p.y, hexSize * 1.8, hexSize * 1.1, 8);
+      stroke(244, 229, 179, 230);
+      strokeWeight(max(1, hexSize * 0.11));
+      rect(p.x, p.y, hexSize * 1.82, hexSize * 1.12, 2);
     }
 
     noStroke();
-    fill(15);
-    textSize(10);
+    fill(21, 18, 13);
+    textSize(max(7, hexSize * 0.28));
     textAlign(CENTER, CENTER);
-    text(`${u.hp}HP/${u.mpLeft}MP`, p.x, p.y + 1);
+    text(hexSize >= 13 ? `${u.hp}HP/${u.mpLeft}MP` : `${u.hp}/${u.mpLeft}`, p.x, p.y + 1);
     if (u.entrenched) {
-      fill('#c7e4ff');
-      text(`E${u.entrenched}`, p.x + hexSize * 0.45, p.y - hexSize * 0.35);
+      fill(216, 225, 205);
+      text(`E${u.entrenched}`, p.x + hexSize * 0.44, p.y - hexSize * 0.34);
+    }
+    if (!u.supplied) {
+      fill(171, 95, 87);
+      triangle(
+        p.x - hexSize * 0.54, p.y + hexSize * 0.34,
+        p.x - hexSize * 0.42, p.y + hexSize * 0.12,
+        p.x - hexSize * 0.3, p.y + hexSize * 0.34
+      );
     }
   });
   rectMode(CORNER);
@@ -473,12 +831,12 @@ function drawSelectionOverlay() {
     getReachableCached(selected).forEach(t => {
       const p = hexToPixel(t.q, t.r);
       noFill();
-      stroke(190, 220, 255, 120);
-      strokeWeight(1.8);
+      stroke(227, 206, 152, 145);
+      strokeWeight(max(0.9, hexSize * 0.09));
       hexShape(p.x, p.y);
       noStroke();
-      fill(230, 230, 240, 120);
-      textSize(9);
+      fill(244, 227, 180, 140);
+      textSize(max(7, hexSize * 0.24));
       textAlign(CENTER, CENTER);
       text(t.mp, p.x, p.y);
     });
@@ -487,8 +845,8 @@ function drawSelectionOverlay() {
     enemiesAdjacent(selected).forEach(e => {
       const p = hexToPixel(e.q, e.r);
       noFill();
-      stroke(255, 120, 120, 160);
-      strokeWeight(2);
+      stroke(216, 109, 100, 175);
+      strokeWeight(max(1, hexSize * 0.1));
       hexShape(p.x, p.y);
     });
   }
@@ -668,7 +1026,7 @@ function clampCamera() {
 
 function centerOnUnit(u) {
   const p = hexToPixel(u.q, u.r);
-  const targetY = playableHeight() * 0.45;
+  const targetY = playableHeight() * (isPortraitPhone() ? 0.4 : 0.45);
   camera.x = W * 0.5 - p.x * camera.zoom;
   camera.y = targetY - p.y * camera.zoom;
   clampCamera();
@@ -734,7 +1092,7 @@ function doMove(u, q, r) {
 function doAttack(a, d) {
   if (a.side !== state.active || a.acted) return log('该单位无法继续攻击。');
   if (hexDist(a.q, a.r, d.q, d.r) !== 1) return log('必须邻接攻击。');
-  const cell = mapData.get(key(d.q, d.r));
+  const cell = mapData.get(tileKey(d.q, d.r));
   const defBonus = cell.terrain.def + d.entrenched;
   let atk = a.atk + floor(a.morale / 3) + (a.ammo > 0 ? 1 : 0);
   let def = d.def + defBonus + floor(d.morale / 3);
@@ -762,7 +1120,7 @@ function doBombard(target) {
   if (s.arty <= 0 && s.air <= 0) return log('无炮火/空袭支援。');
   const useAir = s.air > 0 && state.active === 'GER';
   if (useAir) s.air--; else s.arty--;
-  const cover = mapData.get(key(target.q, target.r)).terrain.def;
+  const cover = mapData.get(tileKey(target.q, target.r)).terrain.def;
   const roll = floor(random(1, 7));
   const hit = roll + (useAir ? 1 : 0) - cover >= 4;
   if (hit) {
@@ -940,7 +1298,11 @@ function bindUI() {
 }
 
 function isMobileLayout() {
-  return window.matchMedia('(max-width: 980px)').matches;
+  return window.matchMedia('(max-width: 1100px)').matches;
+}
+
+function isPortraitPhone() {
+  return window.matchMedia('(max-width: 760px) and (orientation: portrait)').matches;
 }
 
 function togglePanel(which) {
@@ -975,18 +1337,26 @@ function updatePanels() {
   const left = document.getElementById('leftPanel');
   const right = document.getElementById('rightPanel');
   const activeTitleClass = `titleSide-${state.active}`;
-  const mobileHint = isMobileLayout()
-    ? '手机操作：单指拖拽地图、双指缩放、轻点单位执行命令。'
-    : '桌面操作：滚轮缩放地图，点击按钮切换战术模式。';
+  const mobileHint = isPortraitPhone()
+    ? '竖屏操作：上方切换面板，底部双列命令，单指拖图/双指缩放。'
+    : isMobileLayout()
+      ? '移动端操作：单指拖拽、双指缩放、点击单位后在底栏执行命令。'
+      : '桌面操作：滚轮缩放地图，点击按钮切换战术模式。';
+  const aliveGER = units.filter(u => u.alive && u.side === 'GER').length;
+  const aliveSOV = units.filter(u => u.alive && u.side === 'SOV').length;
+  const activeSupport = state.support[state.active];
 
   left.innerHTML = `
     <h2 class="${activeTitleClass}">第 ${state.turn} 回合 · ${state.active === 'GER' ? '德军行动' : '苏军行动'}</h2>
-    <div class="stat"><span>模式</span><span class="tag">${mode}</span></div>
+    <div class="stat"><span>模式</span><span class="tag">${MODE_NAMES[mode] || mode}</span></div>
     <div class="stat"><span>胜利点</span><span>GER ${state.vp.GER} : ${state.vp.SOV} SOV</span></div>
+    <div class="stat"><span>战区网格</span><span>${COLS} × ${ROWS}</span></div>
+    <div class="stat"><span>地图精度</span><span>${MAP_TIER}</span></div>
     <div class="stat"><span>回合上限</span><span>${state.maxTurn}</span></div>
-    <div class="stat"><span>当前支援</span><span>空袭 ${state.support[state.active].air} / 炮击 ${state.support[state.active].arty}</span></div>
-    <div class="stat"><span>补给动作</span><span>${state.support[state.active].supply}</span></div>
+    <div class="stat"><span>当前支援</span><span>空袭 ${activeSupport.air} / 炮击 ${activeSupport.arty}</span></div>
+    <div class="stat"><span>补给动作</span><span>${activeSupport.supply}</span></div>
     <div class="stat"><span>玩家阵营</span><span>${state.playerSide}</span></div>
+    <div class="stat"><span>存活兵力</span><span>GER ${aliveGER} · SOV ${aliveSOV}</span></div>
     <div class="stat"><span>镜头缩放</span><span>x${camera.zoom.toFixed(2)}</span></div>
     <p class="muted">${mobileHint}</p>
     <h3>目标点控制</h3>
@@ -996,14 +1366,14 @@ function updatePanels() {
   if (!selected) {
     right.innerHTML = `
       <h2>单位详情</h2>
-      <p class="muted">点击地图单位以查看详情。</p>
+      <p class="muted">点击战区单位查看编制、补给与所在地形分区。</p>
       <h3>战报</h3>
       <div class="log">${logs.slice(-10).map(l => `<div>${l}</div>`).join('')}</div>
     `;
     uiDirty = false;
     return;
   }
-  const t = mapData.get(key(selected.q, selected.r));
+  const t = mapData.get(tileKey(selected.q, selected.r));
   right.innerHTML = `
     <h2>${selected.name}</h2>
     <div class="stat"><span>阵营 / 集团军</span><span>${selected.side} · ${selected.army}</span></div>
@@ -1013,6 +1383,7 @@ function updatePanels() {
     <div class="stat"><span>补给 / 弹药</span><span>${selected.supplied ? '正常' : '中断'} / ${selected.ammo}</span></div>
     <div class="stat"><span>工事</span><span>E${selected.entrenched}</span></div>
     <div class="stat"><span>地形</span><span>${t.terrain.name} DEF+${t.terrain.def}</span></div>
+    <div class="stat"><span>地形分区</span><span>${t.district || '未标定'} · 海拔${t.elevation}</span></div>
     <div class="stat"><span>坐标</span><span>(${selected.q}, ${selected.r})</span></div>
     <h3>战报</h3>
     <div class="log">${logs.slice(-10).map(l => `<div>${l}</div>`).join('')}</div>
@@ -1021,7 +1392,7 @@ function updatePanels() {
 }
 
 function reachable(u) {
-  const best = new Map([[key(u.q, u.r), u.mpLeft]]);
+  const best = new Map([[tileKey(u.q, u.r), u.mpLeft]]);
   const queue = [{ q: u.q, r: u.r, mp: u.mpLeft }];
   const out = [];
   while (queue.length) {
@@ -1030,12 +1401,12 @@ function reachable(u) {
     for (const n of neighbors(cur.q, cur.r)) {
       if (!inMap(n.q, n.r)) continue;
       if (unitAt(n.q, n.r) && !(n.q === u.q && n.r === u.r)) continue;
-      const t = mapData.get(key(n.q, n.r)).terrain;
+      const t = mapData.get(tileKey(n.q, n.r)).terrain;
       if (t.cost >= 90) continue;
       const cost = t.cost + (enemyZOC(n.q, n.r, opposite(u.side)) ? 1 : 0);
       const left = cur.mp - cost;
       if (left < 0) continue;
-      const k = key(n.q, n.r);
+      const k = tileKey(n.q, n.r);
       if (!best.has(k) || left > best.get(k)) {
         best.set(k, left);
         queue.push({ q: n.q, r: n.r, mp: left });
@@ -1046,19 +1417,19 @@ function reachable(u) {
 }
 
 function supplyConnected(u) {
-  const sourceQ = u.side === 'GER' ? 0 : 12;
-  const visited = new Set([key(u.q, u.r)]);
+  const sourceQ = u.side === 'GER' ? 1 : COLS - 2;
+  const visited = new Set([tileKey(u.q, u.r)]);
   const queue = [{ q: u.q, r: u.r }];
   while (queue.length) {
     const c = queue.shift();
     if (Math.abs(c.q - sourceQ) <= 1) return true;
     for (const n of neighbors(c.q, c.r)) {
       if (!inMap(n.q, n.r)) continue;
-      const t = mapData.get(key(n.q, n.r)).terrain;
+      const t = mapData.get(tileKey(n.q, n.r)).terrain;
       if (t.cost >= 90) continue;
       const enemy = unitAt(n.q, n.r);
       if (enemy && enemy.side !== u.side) continue;
-      const k = key(n.q, n.r);
+      const k = tileKey(n.q, n.r);
       if (visited.has(k)) continue;
       visited.add(k);
       queue.push(n);
@@ -1092,10 +1463,10 @@ function unitAt(q, r) {
 }
 
 function inMap(q, r) {
-  return q >= 0 && q < COLS && r >= 0 && r < ROWS && mapData.has(key(q, r));
+  return q >= 0 && q < COLS && r >= 0 && r < ROWS && mapData.has(tileKey(q, r));
 }
 
-function key(q, r) {
+function tileKey(q, r) {
   return `${q},${r}`;
 }
 
