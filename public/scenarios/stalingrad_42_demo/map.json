@@ -1,0 +1,198 @@
+{
+  "terrain": [
+    {
+      "q": -5,
+      "r": -2,
+      "type": "steppe"
+    },
+    {
+      "q": -4,
+      "r": -2,
+      "type": "steppe"
+    },
+    {
+      "q": -3,
+      "r": -2,
+      "type": "steppe"
+    },
+    {
+      "q": -2,
+      "r": -2,
+      "type": "urban"
+    },
+    {
+      "q": -1,
+      "r": -2,
+      "type": "urban"
+    },
+    {
+      "q": 0,
+      "r": -2,
+      "type": "urban"
+    },
+    {
+      "q": 1,
+      "r": -2,
+      "type": "urban"
+    },
+    {
+      "q": 2,
+      "r": -2,
+      "type": "urban"
+    },
+    {
+      "q": 3,
+      "r": -2,
+      "type": "urban"
+    },
+    {
+      "q": -3,
+      "r": -1,
+      "type": "steppe"
+    },
+    {
+      "q": -2,
+      "r": -1,
+      "type": "urban"
+    },
+    {
+      "q": -1,
+      "r": -1,
+      "type": "urban"
+    },
+    {
+      "q": 0,
+      "r": -1,
+      "type": "river",
+      "riverEdge": [
+        "W"
+      ]
+    },
+    {
+      "q": 1,
+      "r": -1,
+      "type": "river",
+      "riverEdge": [
+        "E"
+      ]
+    },
+    {
+      "q": 2,
+      "r": -1,
+      "type": "urban"
+    },
+    {
+      "q": 3,
+      "r": -1,
+      "type": "urban"
+    },
+    {
+      "q": 4,
+      "r": -1,
+      "type": "steppe"
+    },
+    {
+      "q": -2,
+      "r": 0,
+      "type": "urban"
+    },
+    {
+      "q": -1,
+      "r": 0,
+      "type": "urban"
+    },
+    {
+      "q": 0,
+      "r": 0,
+      "type": "river",
+      "riverEdge": [
+        "W"
+      ]
+    },
+    {
+      "q": 1,
+      "r": 0,
+      "type": "river",
+      "riverEdge": [
+        "E"
+      ]
+    },
+    {
+      "q": 2,
+      "r": 0,
+      "type": "urban"
+    },
+    {
+      "q": 3,
+      "r": 0,
+      "type": "steppe"
+    },
+    {
+      "q": 4,
+      "r": 0,
+      "type": "steppe"
+    },
+    {
+      "q": -2,
+      "r": 1,
+      "type": "urban"
+    },
+    {
+      "q": -1,
+      "r": 1,
+      "type": "urban"
+    },
+    {
+      "q": 0,
+      "r": 1,
+      "type": "river",
+      "riverEdge": [
+        "W"
+      ]
+    },
+    {
+      "q": 1,
+      "r": 1,
+      "type": "river",
+      "riverEdge": [
+        "E"
+      ]
+    },
+    {
+      "q": 2,
+      "r": 1,
+      "type": "urban"
+    },
+    {
+      "q": 3,
+      "r": 1,
+      "type": "steppe"
+    },
+    {
+      "q": -1,
+      "r": 2,
+      "type": "steppe"
+    },
+    {
+      "q": 0,
+      "r": 2,
+      "type": "river",
+      "riverEdge": [
+        "W"
+      ]
+    },
+    {
+      "q": 1,
+      "r": 2,
+      "type": "river",
+      "riverEdge": [
+        "E"
+      ]
+    },
+    {
+      "q": 2,
+      "r": 2,
+      "type": "steppe"
+    }
+  ]
+}
