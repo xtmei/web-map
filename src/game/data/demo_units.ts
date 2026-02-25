@@ -10,6 +10,8 @@ export const demoUnits: Unit[] = [
     echelon: 'Army',
     strength: 88,
     morale: 76,
+    mpMax: 4,
+    mpRemaining: 4,
     pos: { q: -5, r: -2 }
   },
   {
@@ -21,6 +23,8 @@ export const demoUnits: Unit[] = [
     echelon: 'Division',
     strength: 46,
     morale: 61,
+    mpMax: 4,
+    mpRemaining: 4,
     pos: { q: -3, r: -1 }
   },
   {
@@ -32,6 +36,8 @@ export const demoUnits: Unit[] = [
     echelon: 'Division',
     strength: 48,
     morale: 62,
+    mpMax: 4,
+    mpRemaining: 4,
     pos: { q: -2, r: 1 }
   },
   {
@@ -43,6 +49,8 @@ export const demoUnits: Unit[] = [
     echelon: 'Army',
     strength: 84,
     morale: 74,
+    mpMax: 4,
+    mpRemaining: 4,
     pos: { q: -1, r: -4 }
   },
   {
@@ -54,6 +62,8 @@ export const demoUnits: Unit[] = [
     echelon: 'Division',
     strength: 58,
     morale: 69,
+    mpMax: 4,
+    mpRemaining: 4,
     pos: { q: 0, r: -2 }
   },
   {
@@ -65,6 +75,8 @@ export const demoUnits: Unit[] = [
     echelon: 'Army',
     strength: 80,
     morale: 83,
+    mpMax: 4,
+    mpRemaining: 4,
     pos: { q: 3, r: -1 }
   },
   {
@@ -76,6 +88,8 @@ export const demoUnits: Unit[] = [
     echelon: 'Division',
     strength: 49,
     morale: 78,
+    mpMax: 4,
+    mpRemaining: 4,
     pos: { q: 4, r: -3 }
   },
   {
@@ -87,6 +101,8 @@ export const demoUnits: Unit[] = [
     echelon: 'Division',
     strength: 45,
     morale: 74,
+    mpMax: 4,
+    mpRemaining: 4,
     pos: { q: 2, r: 2 }
   },
   {
@@ -98,6 +114,8 @@ export const demoUnits: Unit[] = [
     echelon: 'Army',
     strength: 82,
     morale: 79,
+    mpMax: 4,
+    mpRemaining: 4,
     pos: { q: 5, r: 0 }
   },
   {
@@ -109,6 +127,8 @@ export const demoUnits: Unit[] = [
     echelon: 'Regiment',
     strength: 31,
     morale: 70,
+    mpMax: 5,
+    mpRemaining: 5,
     pos: { q: 1, r: 4 }
   }
 ];

@@ -3,6 +3,7 @@
 PR1 delivered a **Hex Playground** foundation using **Vite + Vanilla TypeScript + HTML Canvas 2D**.
 PR2 extended that playground with **unit tokens and selection**.
 PR3 adds **mobile-first controls, controllable formation filtering, and a selected-unit bottom sheet**.
+PR4 adds **movement points, move mode, reachable range overlays, path preview, confirm/cancel move flow, and end turn MP reset**.
 
 ## Run
 
@@ -77,4 +78,22 @@ Implemented:
 
 ## Roadmap
 
-- **PR4 (next):** movement + path preview for selected controllable units (not implemented in PR3).
+- **PR5 (next):** combat resolution (CRT + d6) and optional opportunity fire.
+
+
+## PR4 Notes
+
+- Units now have `mpMax` and `mpRemaining`. If missing in scenario `units.json`, defaults are: Battalion=6, Regiment=5, Division=4, all other echelons=4.
+- End Turn currently resets MP for all units on the currently selected side (single-player handoff style).
+- Cancel in move mode clears the preview and exits move mode without moving the unit.
+
+## PR4 Manual QA Checklist
+
+1. App runs: `npm install && npm run dev`
+2. Select a controllable unit: HUD/panel shows `mpMax/mpRemaining`.
+3. Tap **Move**: reachable hexes highlight.
+4. Tap a reachable hex: path preview appears and move cost is displayed in HUD.
+5. Tap **Confirm Move**: unit moves to destination and `mpRemaining` decreases by path cost.
+6. Unit cannot move across blocked river edges from `riverEdge` data.
+7. Tap **End Turn**: MP resets for currently controlled side units; move preview/path clears; pan/zoom/touch still works.
+8. Units outside selected formation remain non-interactable as before.

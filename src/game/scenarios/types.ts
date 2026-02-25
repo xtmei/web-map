@@ -1,6 +1,15 @@
 import type { Side, Unit } from '../units/model';
+import type { HexDirection } from '../../engine/hex/grid';
 
-export type TerrainType = 'clear' | 'steppe' | 'urban' | 'river';
+export type TerrainType =
+  | 'clear'
+  | 'steppe'
+  | 'urban'
+  | 'river'
+  | 'factory'
+  | 'hill'
+  | 'swamp'
+  | 'mud';
 
 export interface ScenarioMeta {
   id: string;
@@ -14,6 +23,8 @@ export interface TerrainHex {
   q: number;
   r: number;
   type: TerrainType;
+  road?: boolean;
+  riverEdge?: HexDirection[];
 }
 
 export interface ScenarioMap {

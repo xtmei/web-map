@@ -8,6 +8,9 @@ interface ControlsState {
   selectedScenarioId: string;
   scenarios: ScenarioOption[];
   formations: FormationOption[];
+  movementMode: boolean;
+  canMove: boolean;
+  canConfirmMove: boolean;
 }
 
 interface ControlsHandlers {
@@ -15,6 +18,10 @@ interface ControlsHandlers {
   onSideChange: (side: Side) => void;
   onFormationChange: (formationId: string) => void;
   onClearSelection: () => void;
+  onToggleMoveMode: () => void;
+  onConfirmMove: () => void;
+  onCancelMove: () => void;
+  onEndTurn: () => void;
 }
 
 export interface ControlsView {
@@ -38,6 +45,14 @@ export function createControls(root: HTMLElement, handlers: ControlsHandlers): C
       </label>
       <button type="button" id="clear-selection">Clear</button>
     </div>
+    <div class="move-controls">
+      <button type="button" id="toggle-move">Move</button>
+      <button type="button" id="end-turn">End Turn</button>
+    </div>
+    <div class="move-confirm" aria-live="polite">
+      <button type="button" id="confirm-move" class="move-confirm__confirm">Confirm Move</button>
+      <button type="button" id="cancel-move" class="move-confirm__cancel">Cancel</button>
+    </div>
   `;
 
   const scenarioSelect = root.querySelector<HTMLSelectElement>('#scenario-select');
@@ -45,8 +60,24 @@ export function createControls(root: HTMLElement, handlers: ControlsHandlers): C
   const sovietButton = root.querySelector<HTMLButtonElement>('button[data-side="Soviet"]');
   const formationSelect = root.querySelector<HTMLSelectElement>('#formation-select');
   const clearButton = root.querySelector<HTMLButtonElement>('#clear-selection');
+  const moveButton = root.querySelector<HTMLButtonElement>('#toggle-move');
+  const endTurnButton = root.querySelector<HTMLButtonElement>('#end-turn');
+  const confirmMoveButton = root.querySelector<HTMLButtonElement>('#confirm-move');
+  const cancelMoveButton = root.querySelector<HTMLButtonElement>('#cancel-move');
+  const moveConfirm = root.querySelector<HTMLDivElement>('.move-confirm');
 
-  if (!scenarioSelect || !axisButton || !sovietButton || !formationSelect || !clearButton) {
+  if (
+    !scenarioSelect ||
+    !axisButton ||
+    !sovietButton ||
+    !formationSelect ||
+    !clearButton ||
+    !moveButton ||
+    !endTurnButton ||
+    !confirmMoveButton ||
+    !cancelMoveButton ||
+    !moveConfirm
+  ) {
     throw new Error('Failed to create controls UI');
   }
 
@@ -55,6 +86,10 @@ export function createControls(root: HTMLElement, handlers: ControlsHandlers): C
   sovietButton.addEventListener('click', () => handlers.onSideChange('Soviet'));
   formationSelect.addEventListener('change', () => handlers.onFormationChange(formationSelect.value));
   clearButton.addEventListener('click', () => handlers.onClearSelection());
+  moveButton.addEventListener('click', () => handlers.onToggleMoveMode());
+  endTurnButton.addEventListener('click', () => handlers.onEndTurn());
+  confirmMoveButton.addEventListener('click', () => handlers.onConfirmMove());
+  cancelMoveButton.addEventListener('click', () => handlers.onCancelMove());
 
   return {
     render(state) {
@@ -76,6 +111,13 @@ export function createControls(root: HTMLElement, handlers: ControlsHandlers): C
             }>${formation.name}</option>`
         )
         .join('');
+
+      moveButton.disabled = !state.canMove;
+      moveButton.classList.toggle('is-active', state.movementMode);
+      moveButton.textContent = state.movementMode ? 'Moving…' : 'Move';
+
+      confirmMoveButton.disabled = !state.canConfirmMove;
+      moveConfirm.classList.toggle('is-open', state.movementMode);
     }
   };
 }

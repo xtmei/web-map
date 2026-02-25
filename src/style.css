@@ -213,3 +213,60 @@ body {
   color: #ffd6d6;
   font-weight: 600;
 }
+
+.move-controls {
+  pointer-events: auto;
+  position: fixed;
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(12px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.move-controls button,
+.move-confirm button {
+  min-height: 46px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: rgba(28, 28, 28, 0.9);
+  color: #f2f2f2;
+  padding: 10px 14px;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+#toggle-move.is-active {
+  background: rgba(60, 93, 120, 0.95);
+  border-color: rgba(128, 195, 250, 0.9);
+}
+
+.move-confirm {
+  pointer-events: auto;
+  position: fixed;
+  left: max(12px, env(safe-area-inset-left));
+  right: max(12px, env(safe-area-inset-right));
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 120px);
+  display: none;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.move-confirm.is-open {
+  display: grid;
+}
+
+.move-confirm__confirm {
+  background: rgba(60, 114, 61, 0.95);
+  border-color: rgba(149, 229, 151, 0.85);
+}
+
+.move-confirm__cancel {
+  background: rgba(118, 62, 62, 0.95);
+  border-color: rgba(238, 167, 167, 0.85);
+}
+
+.move-confirm button:disabled,
+.move-controls button:disabled {
+  opacity: 0.45;
+}

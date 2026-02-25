@@ -1,8 +1,14 @@
 import './style.css';
 import { Camera } from './engine/camera';
 import { InputController } from './engine/input';
-import { createHexDisc } from './engine/hex/grid';
-import { drawHexGrid, drawUnits, getUnitTokenRadius } from './engine/hex/render';
+import { createHexDisc, hexKey } from './engine/hex/grid';
+import {
+  drawHexGrid,
+  drawPathOverlay,
+  drawReachableOverlay,
+  drawUnits,
+  getUnitTokenRadius
+} from './engine/hex/render';
 import { CanvasSurface } from './engine/render/canvas';
 import {
   applyScenarioToState,
@@ -11,6 +17,8 @@ import {
   getSelectedUnit,
   getUnitsForFormation
 } from './game/state';
+import { computeReachable } from './game/movement/dijkstra';
+import { reconstructPath } from './game/movement/path';
 import { getScenarioOptions, loadScenario } from './game/scenarios/loader';
 import type { Side } from './game/units/model';
 import { createControls } from './ui/controls';
@@ -43,24 +51,57 @@ let hexes = createHexDisc(FALLBACK_GRID_RADIUS);
 camera.x = canvasEl.clientWidth / 2;
 camera.y = canvasEl.clientHeight / 2;
 
+function clearMovementState(exitMode: boolean): void {
+  gameState.movePreview = null;
+  gameState.reachable = null;
+  if (exitMode) {
+    gameState.movementMode = false;
+  }
+}
+
+function recomputeReachable(): void {
+  if (!gameState.movementMode) {
+    gameState.reachable = null;
+    return;
+  }
+
+  const selectedUnit = getSelectedUnit(gameState.units, gameState.selectedUnitId);
+  if (!selectedUnit || selectedUnit.formationId !== gameState.selectedFormationId || selectedUnit.mpRemaining <= 0) {
+    gameState.reachable = null;
+    return;
+  }
+
+  gameState.reachable = computeReachable(selectedUnit.pos, selectedUnit.mpRemaining, {
+    terrainByHex: gameState.terrainByHex,
+    roadByHex: gameState.roadByHex,
+    riverEdgesByHex: gameState.riverEdgesByHex
+  });
+}
+
 function setSide(side: Side): void {
   gameState.selectedSide = side;
   const formations = getAvailableFormations(gameState.units, side);
   gameState.selectedFormationId = formations[0]?.id ?? '';
   gameState.selectedUnitId = null;
+  clearMovementState(true);
 }
 
 function renderUi(): void {
   const formations = getAvailableFormations(gameState.units, gameState.selectedSide);
+  const selectedUnit = getSelectedUnit(gameState.units, gameState.selectedUnitId);
+
   controls.render({
     selectedScenarioId: gameState.scenarioId,
     scenarios: scenarioOptions,
     selectedSide: gameState.selectedSide,
     selectedFormationId: gameState.selectedFormationId,
-    formations
+    formations,
+    movementMode: gameState.movementMode,
+    canMove:
+      !!selectedUnit && selectedUnit.formationId === gameState.selectedFormationId && selectedUnit.mpRemaining > 0,
+    canConfirmMove: gameState.movePreview !== null
   });
 
-  const selectedUnit = getSelectedUnit(gameState.units, gameState.selectedUnitId);
   panel.render(selectedUnit);
   renderHud(hudEl, gameState);
 }
@@ -80,6 +121,77 @@ async function switchScenario(scenarioId: string): Promise<void> {
   renderUi();
 }
 
+function toggleMoveMode(): void {
+  const selectedUnit = getSelectedUnit(gameState.units, gameState.selectedUnitId);
+  if (!selectedUnit || selectedUnit.formationId !== gameState.selectedFormationId || selectedUnit.mpRemaining <= 0) {
+    gameState.movementMode = false;
+    clearMovementState(true);
+    renderUi();
+    return;
+  }
+
+  gameState.movementMode = !gameState.movementMode;
+  gameState.movePreview = null;
+  recomputeReachable();
+  renderUi();
+}
+
+function setMovePreviewForHex(q: number, r: number): void {
+  const selectedUnit = getSelectedUnit(gameState.units, gameState.selectedUnitId);
+  if (!selectedUnit || !gameState.reachable) {
+    return;
+  }
+
+  const destinationKey = `${q},${r}`;
+  if (!gameState.reachable.costSoFar.has(destinationKey) || destinationKey === hexKey(selectedUnit.pos)) {
+    return;
+  }
+
+  const cost = gameState.reachable.costSoFar.get(destinationKey) ?? 0;
+  const path = reconstructPath(gameState.reachable.cameFrom, destinationKey);
+
+  gameState.movePreview = {
+    dest: { q, r },
+    path,
+    cost
+  };
+}
+
+function confirmMove(): void {
+  if (!gameState.movePreview) {
+    return;
+  }
+
+  const selectedUnit = getSelectedUnit(gameState.units, gameState.selectedUnitId);
+  if (!selectedUnit) {
+    return;
+  }
+
+  selectedUnit.pos = { ...gameState.movePreview.dest };
+  selectedUnit.mpRemaining = Math.max(0, selectedUnit.mpRemaining - gameState.movePreview.cost);
+  gameState.selectedHex = selectedUnit.pos;
+  clearMovementState(true);
+  renderUi();
+}
+
+function cancelMove(): void {
+  gameState.movePreview = null;
+  gameState.movementMode = false;
+  gameState.reachable = null;
+  renderUi();
+}
+
+function endTurn(): void {
+  for (const unit of gameState.units) {
+    if (unit.side === gameState.selectedSide) {
+      unit.mpRemaining = unit.mpMax;
+    }
+  }
+
+  clearMovementState(true);
+  renderUi();
+}
+
 const controls = createControls(controlsRootEl, {
   onScenarioChange(scenarioId) {
     void switchScenario(scenarioId);
@@ -91,17 +203,32 @@ const controls = createControls(controlsRootEl, {
   onFormationChange(formationId) {
     gameState.selectedFormationId = formationId;
     gameState.selectedUnitId = null;
+    clearMovementState(true);
     renderUi();
   },
   onClearSelection() {
     gameState.selectedUnitId = null;
     gameState.selectedHex = null;
+    clearMovementState(true);
     renderUi();
+  },
+  onToggleMoveMode() {
+    toggleMoveMode();
+  },
+  onConfirmMove() {
+    confirmMove();
+  },
+  onCancelMove() {
+    cancelMove();
+  },
+  onEndTurn() {
+    endTurn();
   }
 });
 
 const panel = createUnitPanel(panelRootEl, () => {
   gameState.selectedUnitId = null;
+  clearMovementState(true);
   renderUi();
 });
 
@@ -111,6 +238,15 @@ new InputController(
   HEX_SIZE,
   {
     onTap({ hex, unit }) {
+      if (gameState.movementMode && gameState.reachable) {
+        if (gameState.reachable.costSoFar.has(`${hex.q},${hex.r}`)) {
+          setMovePreviewForHex(hex.q, hex.r);
+        }
+        gameState.selectedHex = hex;
+        renderUi();
+        return;
+      }
+
       if (unit) {
         gameState.selectedUnitId = unit.id;
         gameState.selectedHex = unit.pos;
@@ -118,6 +254,8 @@ new InputController(
         gameState.selectedUnitId = null;
         gameState.selectedHex = hex;
       }
+
+      clearMovementState(true);
       renderUi();
     }
   },
@@ -145,6 +283,22 @@ function frame(): void {
     gameState.selectedHex,
     gameState.terrainByHex
   );
+
+  if (gameState.movementMode && gameState.reachable) {
+    const selectedUnit = getSelectedUnit(gameState.units, gameState.selectedUnitId);
+    const startKey = selectedUnit ? hexKey(selectedUnit.pos) : '';
+    const reachableHexes = Array.from(gameState.reachable.costSoFar.keys())
+      .filter((key) => key !== startKey)
+      .map((key) => {
+        const [q, r] = key.split(',').map(Number);
+        return { q, r };
+      });
+    drawReachableOverlay(surface.ctx, reachableHexes, HEX_SIZE);
+  }
+
+  if (gameState.movePreview) {
+    drawPathOverlay(surface.ctx, gameState.movePreview.path, HEX_SIZE);
+  }
 
   drawUnits(
     surface.ctx,

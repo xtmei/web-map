@@ -1,5 +1,12 @@
 import type { Side, Unit } from '../units/model';
-import type { ScenarioDefinition, ScenarioMap, ScenarioMeta, ScenarioOption, TerrainType } from './types';
+import type {
+  ScenarioDefinition,
+  ScenarioMap,
+  ScenarioMeta,
+  ScenarioOption,
+  TerrainHex,
+  TerrainType
+} from './types';
 
 const SCENARIO_OPTIONS: ScenarioOption[] = [
   {
@@ -11,10 +18,18 @@ const SCENARIO_OPTIONS: ScenarioOption[] = [
 
 const VALID_ECHELONS = new Set(['Army', 'Corps', 'Division', 'Regiment', 'Battalion']);
 const VALID_SIDES = new Set(['Axis', 'Soviet']);
-const VALID_TERRAIN = new Set(['clear', 'steppe', 'urban', 'river']);
+const VALID_TERRAIN = new Set(['clear', 'steppe', 'urban', 'river', 'factory', 'hill', 'swamp', 'mud']);
+const VALID_DIRECTIONS = new Set(['E', 'NE', 'NW', 'W', 'SW', 'SE']);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
+}
+
+function defaultMpForEchelon(echelon: Unit['echelon']): number {
+  if (echelon === 'Battalion') return 6;
+  if (echelon === 'Regiment') return 5;
+  if (echelon === 'Division') return 4;
+  return 4;
 }
 
 async function fetchJson(url: string): Promise<unknown> {
@@ -40,7 +55,8 @@ function parseMeta(value: unknown): ScenarioMeta {
   if (typeof id !== 'string' || !id) throw new Error('meta.json: "id" must be a non-empty string');
   if (typeof name !== 'string' || !name) throw new Error('meta.json: "name" must be a non-empty string');
   if (typeof description !== 'string') throw new Error('meta.json: "description" must be a string');
-  if (typeof mapRadius !== 'number' || mapRadius < 1) throw new Error('meta.json: "mapRadius" must be a positive number');
+  if (typeof mapRadius !== 'number' || mapRadius < 1)
+    throw new Error('meta.json: "mapRadius" must be a positive number');
   if (typeof defaultSide !== 'string' || !VALID_SIDES.has(defaultSide)) {
     throw new Error('meta.json: "defaultSide" must be "Axis" or "Soviet"');
   }
@@ -53,20 +69,38 @@ function parseMap(value: unknown): ScenarioMap {
     throw new Error('map.json: "terrain" must be an array');
   }
 
-  const terrain = value.terrain.map((entry, index) => {
+  const terrain = value.terrain.map((entry, index): TerrainHex => {
     if (!isRecord(entry)) {
       throw new Error(`map.json: terrain[${index}] must be an object`);
     }
 
-    const { q, r, type } = entry;
+    const { q, r, type, road, riverEdge } = entry;
     if (typeof q !== 'number' || typeof r !== 'number') {
       throw new Error(`map.json: terrain[${index}] q/r must be numbers`);
     }
     if (typeof type !== 'string' || !VALID_TERRAIN.has(type)) {
-      throw new Error(`map.json: terrain[${index}] type must be one of ${Array.from(VALID_TERRAIN).join(', ')}`);
+      throw new Error(
+        `map.json: terrain[${index}] type must be one of ${Array.from(VALID_TERRAIN).join(', ')}`
+      );
     }
 
-    return { q, r, type: type as TerrainType };
+    if (road !== undefined && typeof road !== 'boolean') {
+      throw new Error(`map.json: terrain[${index}].road must be boolean when present`);
+    }
+
+    if (riverEdge !== undefined) {
+      if (!Array.isArray(riverEdge) || !riverEdge.every((edge) => typeof edge === 'string' && VALID_DIRECTIONS.has(edge))) {
+        throw new Error(`map.json: terrain[${index}].riverEdge must be array of E,NE,NW,W,SW,SE`);
+      }
+    }
+
+    return {
+      q,
+      r,
+      type: type as TerrainType,
+      road: road === true,
+      riverEdge: riverEdge as TerrainHex['riverEdge']
+    };
   });
 
   return { terrain };
@@ -82,7 +116,20 @@ function parseUnits(value: unknown): Unit[] {
       throw new Error(`units.json[${index}] must be an object`);
     }
 
-    const { id, name, side, formationId, formationName, parentId, echelon, strength, morale, pos } = entry;
+    const {
+      id,
+      name,
+      side,
+      formationId,
+      formationName,
+      parentId,
+      echelon,
+      strength,
+      morale,
+      mpMax,
+      mpRemaining,
+      pos
+    } = entry;
 
     if (typeof id !== 'string' || !id) throw new Error(`units.json[${index}].id must be non-empty string`);
     if (typeof name !== 'string' || !name) throw new Error(`units.json[${index}].name must be non-empty string`);
@@ -96,6 +143,11 @@ function parseUnits(value: unknown): Unit[] {
       throw new Error(`units.json[${index}].pos must include numeric q/r`);
     }
 
+    const echelonType = echelon as Unit['echelon'];
+    const defaultMp = defaultMpForEchelon(echelonType);
+    const parsedMpMax = typeof mpMax === 'number' ? mpMax : defaultMp;
+    const parsedMpRemaining = typeof mpRemaining === 'number' ? mpRemaining : parsedMpMax;
+
     return {
       id,
       name,
@@ -103,9 +155,11 @@ function parseUnits(value: unknown): Unit[] {
       formationId,
       formationName,
       parentId: typeof parentId === 'string' ? parentId : undefined,
-      echelon: echelon as Unit['echelon'],
+      echelon: echelonType,
       strength,
       morale,
+      mpMax: parsedMpMax,
+      mpRemaining: parsedMpRemaining,
       pos: { q: pos.q, r: pos.r }
     };
   });
