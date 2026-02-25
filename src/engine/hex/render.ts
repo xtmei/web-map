@@ -50,15 +50,20 @@ export function drawUnits(
   ctx: CanvasRenderingContext2D,
   units: Unit[],
   hexSize: number,
-  selectedUnitId: string | null
+  selectedUnitId: string | null,
+  selectedFormationId: string
 ): void {
   const tokenRadius = getUnitTokenRadius(hexSize);
 
   for (const unit of units) {
     const center = axialToPixel(unit.pos, hexSize);
     const isSelected = selectedUnitId === unit.id;
+    const isControllable = unit.formationId === selectedFormationId;
 
     ctx.save();
+    if (!isControllable) {
+      ctx.globalAlpha = 0.3;
+    }
 
     if (isSelected) {
       const ringRadius = tokenRadius * 1.25;
