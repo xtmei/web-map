@@ -1,0 +1,13 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {"name": "Volga", "flow": "south"},
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [[44.44,48.77],[44.46,48.74],[44.48,48.71],[44.51,48.69],[44.55,48.66]]
+      }
+    }
+  ]
+}

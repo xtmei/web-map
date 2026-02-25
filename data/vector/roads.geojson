@@ -1,0 +1,21 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {"name": "Main Supply Road", "surface": "paved", "priority": 1},
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [[44.45,48.71],[44.49,48.715],[44.53,48.72],[44.58,48.727]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {"name": "Factory Spur", "surface": "dirt", "priority": 2},
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [[44.52,48.708],[44.55,48.706],[44.58,48.704]]
+      }
+    }
+  ]
+}

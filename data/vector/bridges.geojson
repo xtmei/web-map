@@ -1,0 +1,10 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {"name": "Pontoon-7", "capacity": "light"},
+      "geometry": {"type": "Point", "coordinates": [44.495,48.711]}
+    }
+  ]
+}

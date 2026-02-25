@@ -1,0 +1,31 @@
+{
+  "preferred": [
+    {
+      "id": "loc-stalingrad-south-25000",
+      "priority": "A",
+      "title": "Library of Congress - Stalingrad-Sud (1:25,000)",
+      "iiif_manifest": "https://www.loc.gov/resource/g7064v.ct000790/manifest.json",
+      "notes": "Use Leaflet-IIIF directly or georeference with Allmaps."
+    },
+    {
+      "id": "etomesto-1942-stalingrad",
+      "priority": "B",
+      "title": "EtoMesto georeferenced Stalingrad 1942",
+      "url": "https://www.etomesto.com/map-volgograd_1942-stalingrad/",
+      "notes": "Fallback ready-made overlay and reference for control points."
+    },
+    {
+      "id": "etomesto-1942-aerophoto",
+      "priority": "B",
+      "title": "EtoMesto 1942 aerial photos",
+      "url": "https://www.etomesto.com/map-volgograd_1942-aerofoto/"
+    },
+    {
+      "id": "iu-russian-military-100k",
+      "priority": "C",
+      "title": "Indiana University DataCORE 1:100,000 sheets",
+      "url": "https://datacore.iu.edu/collections/fq977v49m",
+      "notes": "Operational-scale fallback base for larger campaign extents."
+    }
+  ]
+}
