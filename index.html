@@ -604,7 +604,7 @@ function initMap() {
         8
       );
 
-      mapData.set(key(q, r), { q, r, terrain: t, district, elevation, riverCenter });
+      mapData.set(tileKey(q, r), { q, r, terrain: t, district, elevation, riverCenter });
     }
   }
 }
@@ -647,7 +647,7 @@ function draw() {
 function drawHexes() {
   for (let r = 0; r < ROWS; r++) {
     for (let q = 0; q < COLS; q++) {
-      const c = mapData.get(key(q, r));
+      const c = mapData.get(tileKey(q, r));
       if (!c) continue;
       const p = hexToPixel(q, r);
       const [tr, tg, tb] = c.terrain.color;
@@ -1092,7 +1092,7 @@ function doMove(u, q, r) {
 function doAttack(a, d) {
   if (a.side !== state.active || a.acted) return log('该单位无法继续攻击。');
   if (hexDist(a.q, a.r, d.q, d.r) !== 1) return log('必须邻接攻击。');
-  const cell = mapData.get(key(d.q, d.r));
+  const cell = mapData.get(tileKey(d.q, d.r));
   const defBonus = cell.terrain.def + d.entrenched;
   let atk = a.atk + floor(a.morale / 3) + (a.ammo > 0 ? 1 : 0);
   let def = d.def + defBonus + floor(d.morale / 3);
@@ -1120,7 +1120,7 @@ function doBombard(target) {
   if (s.arty <= 0 && s.air <= 0) return log('无炮火/空袭支援。');
   const useAir = s.air > 0 && state.active === 'GER';
   if (useAir) s.air--; else s.arty--;
-  const cover = mapData.get(key(target.q, target.r)).terrain.def;
+  const cover = mapData.get(tileKey(target.q, target.r)).terrain.def;
   const roll = floor(random(1, 7));
   const hit = roll + (useAir ? 1 : 0) - cover >= 4;
   if (hit) {
@@ -1373,7 +1373,7 @@ function updatePanels() {
     uiDirty = false;
     return;
   }
-  const t = mapData.get(key(selected.q, selected.r));
+  const t = mapData.get(tileKey(selected.q, selected.r));
   right.innerHTML = `
     <h2>${selected.name}</h2>
     <div class="stat"><span>阵营 / 集团军</span><span>${selected.side} · ${selected.army}</span></div>
@@ -1392,7 +1392,7 @@ function updatePanels() {
 }
 
 function reachable(u) {
-  const best = new Map([[key(u.q, u.r), u.mpLeft]]);
+  const best = new Map([[tileKey(u.q, u.r), u.mpLeft]]);
   const queue = [{ q: u.q, r: u.r, mp: u.mpLeft }];
   const out = [];
   while (queue.length) {
@@ -1401,12 +1401,12 @@ function reachable(u) {
     for (const n of neighbors(cur.q, cur.r)) {
       if (!inMap(n.q, n.r)) continue;
       if (unitAt(n.q, n.r) && !(n.q === u.q && n.r === u.r)) continue;
-      const t = mapData.get(key(n.q, n.r)).terrain;
+      const t = mapData.get(tileKey(n.q, n.r)).terrain;
       if (t.cost >= 90) continue;
       const cost = t.cost + (enemyZOC(n.q, n.r, opposite(u.side)) ? 1 : 0);
       const left = cur.mp - cost;
       if (left < 0) continue;
-      const k = key(n.q, n.r);
+      const k = tileKey(n.q, n.r);
       if (!best.has(k) || left > best.get(k)) {
         best.set(k, left);
         queue.push({ q: n.q, r: n.r, mp: left });
@@ -1418,18 +1418,18 @@ function reachable(u) {
 
 function supplyConnected(u) {
   const sourceQ = u.side === 'GER' ? 1 : COLS - 2;
-  const visited = new Set([key(u.q, u.r)]);
+  const visited = new Set([tileKey(u.q, u.r)]);
   const queue = [{ q: u.q, r: u.r }];
   while (queue.length) {
     const c = queue.shift();
     if (Math.abs(c.q - sourceQ) <= 1) return true;
     for (const n of neighbors(c.q, c.r)) {
       if (!inMap(n.q, n.r)) continue;
-      const t = mapData.get(key(n.q, n.r)).terrain;
+      const t = mapData.get(tileKey(n.q, n.r)).terrain;
       if (t.cost >= 90) continue;
       const enemy = unitAt(n.q, n.r);
       if (enemy && enemy.side !== u.side) continue;
-      const k = key(n.q, n.r);
+      const k = tileKey(n.q, n.r);
       if (visited.has(k)) continue;
       visited.add(k);
       queue.push(n);
@@ -1463,10 +1463,10 @@ function unitAt(q, r) {
 }
 
 function inMap(q, r) {
-  return q >= 0 && q < COLS && r >= 0 && r < ROWS && mapData.has(key(q, r));
+  return q >= 0 && q < COLS && r >= 0 && r < ROWS && mapData.has(tileKey(q, r));
 }
 
-function key(q, r) {
+function tileKey(q, r) {
   return `${q},${r}`;
 }
 
