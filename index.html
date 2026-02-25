@@ -244,7 +244,7 @@ function initMap() {
       if ((q === 5 && r === 5) || (q === 5 && r === 6) || (q === 6 && r === 5)) t = TERRAIN.INDUSTRY;
       if ((r === 3 && q >= 1 && q <= 8) || (r === 4 && q >= 2 && q <= 8)) if (t !== TERRAIN.RIVER && t !== TERRAIN.EAST) t = TERRAIN.RAIL;
       if (q === 4 && r === 4) t = TERRAIN.HILL;
-      mapData.set(key(q, r), { q, r, terrain: t });
+      mapData.set(hexKey(q, r), { q, r, terrain: t });
     }
   }
 }
@@ -270,7 +270,7 @@ function draw() {
 function drawHexes() {
   for (let r = 0; r < ROWS; r++) {
     for (let q = 0; q < COLS; q++) {
-      const c = mapData.get(key(q, r));
+      const c = mapData.get(hexKey(q, r));
       if (!c) continue;
       const p = hexToPixel(q, r);
       stroke(30, 40, 60);
@@ -377,7 +377,7 @@ function doMove(u, q, r) {
 function doAttack(a, d) {
   if (a.side !== state.active || a.acted) return log('该单位无法继续攻击。');
   if (hexDist(a.q, a.r, d.q, d.r) !== 1) return log('必须邻接攻击。');
-  const cell = mapData.get(key(d.q, d.r));
+  const cell = mapData.get(hexKey(d.q, d.r));
   const defBonus = cell.terrain.def + d.entrenched;
   let atk = a.atk + floor(a.morale / 3) + (a.ammo > 0 ? 1 : 0);
   let def = d.def + defBonus + floor(d.morale / 3);
@@ -403,7 +403,7 @@ function doBombard(target) {
   if (s.arty <= 0 && s.air <= 0) return log('无炮火/空袭支援。');
   const useAir = s.air > 0 && state.active === 'GER';
   if (useAir) s.air--; else s.arty--;
-  const cover = mapData.get(key(target.q, target.r)).terrain.def;
+  const cover = mapData.get(hexKey(target.q, target.r)).terrain.def;
   const roll = floor(random(1, 7));
   const hit = roll + (useAir ? 1 : 0) - cover >= 4;
   if (hit) {
@@ -557,7 +557,7 @@ function updatePanels() {
     right.innerHTML = `<h2>单位详情</h2><p class="muted">点击地图单位以查看详情。</p><h3>战报</h3><div class="log">${logs.slice(-10).map(l => `<div>${l}</div>`).join('')}</div>`;
     return;
   }
-  const t = mapData.get(key(selected.q, selected.r));
+  const t = mapData.get(hexKey(selected.q, selected.r));
   right.innerHTML = `
     <h2>${selected.name}</h2>
     <div class="stat"><span>阵营 / 集团军</span><span>${selected.side} · ${selected.army}</span></div>
@@ -573,7 +573,7 @@ function updatePanels() {
 }
 
 function reachable(u) {
-  const best = new Map([[key(u.q,u.r), u.mpLeft]]);
+  const best = new Map([[hexKey(u.q,u.r), u.mpLeft]]);
   const queue = [{q:u.q, r:u.r, mp:u.mpLeft}];
   const out = [];
   while (queue.length) {
@@ -582,12 +582,12 @@ function reachable(u) {
     for (const n of neighbors(cur.q, cur.r)) {
       if (!inMap(n.q, n.r)) continue;
       if (unitAt(n.q, n.r) && !(n.q === u.q && n.r === u.r)) continue;
-      const t = mapData.get(key(n.q, n.r)).terrain;
+      const t = mapData.get(hexKey(n.q, n.r)).terrain;
       if (t.cost >= 90) continue;
       let cost = t.cost + (enemyZOC(n.q, n.r, opposite(u.side)) ? 1 : 0);
       const left = cur.mp - cost;
       if (left < 0) continue;
-      const k = key(n.q, n.r);
+      const k = hexKey(n.q, n.r);
       if (!best.has(k) || left > best.get(k)) {
         best.set(k, left);
         queue.push({ q:n.q, r:n.r, mp:left });
@@ -599,18 +599,18 @@ function reachable(u) {
 
 function supplyConnected(u) {
   const sourceQ = u.side === 'GER' ? 0 : 12;
-  const visited = new Set([key(u.q, u.r)]);
+  const visited = new Set([hexKey(u.q, u.r)]);
   const queue = [{ q:u.q, r:u.r }];
   while (queue.length) {
     const c = queue.shift();
     if (Math.abs(c.q - sourceQ) <= 1) return true;
     for (const n of neighbors(c.q, c.r)) {
       if (!inMap(n.q, n.r)) continue;
-      const t = mapData.get(key(n.q, n.r)).terrain;
+      const t = mapData.get(hexKey(n.q, n.r)).terrain;
       if (t.cost >= 90) continue;
       const enemy = unitAt(n.q, n.r);
       if (enemy && enemy.side !== u.side) continue;
-      const k = key(n.q, n.r);
+      const k = hexKey(n.q, n.r);
       if (visited.has(k)) continue;
       visited.add(k);
       queue.push(n);
@@ -633,8 +633,8 @@ function nearestUnfriendlyObjective(side, q, r) {
 }
 
 function unitAt(q, r) { return units.find(u => u.alive && u.q === q && u.r === r); }
-function inMap(q, r) { return q>=0 && q<COLS && r>=0 && r<ROWS && mapData.has(key(q,r)); }
-function key(q,r) { return `${q},${r}`; }
+function inMap(q, r) { return q>=0 && q<COLS && r>=0 && r<ROWS && mapData.has(hexKey(q,r)); }
+function hexKey(q,r) { return `${q},${r}`; }
 function opposite(s) { return s === 'GER' ? 'SOV' : 'GER'; }
 
 function neighbors(q, r) {
