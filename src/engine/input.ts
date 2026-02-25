@@ -8,7 +8,7 @@ interface InputHandlers {
 }
 
 interface InputOptions {
-  getUnits: () => Unit[];
+  getSelectableUnits: () => Unit[];
   getUnitHitRadius: () => number;
 }
 
@@ -132,7 +132,7 @@ export class InputController {
   }
 
   private hitTestUnit(world: Point): Unit | null {
-    const units = this.options.getUnits();
+    const units = this.options.getSelectableUnits();
     const hitRadius = this.options.getUnitHitRadius();
     let closest: Unit | null = null;
     let closestDistance = Number.POSITIVE_INFINITY;

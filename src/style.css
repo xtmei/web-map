@@ -17,6 +17,8 @@ body {
 }
 
 #app-canvas {
+  position: fixed;
+  inset: 0;
   width: 100%;
   height: 100%;
   display: block;
@@ -24,11 +26,68 @@ body {
   background: radial-gradient(circle at 20% 20%, #242424, #121212 60%);
 }
 
-.hud {
+.ui-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.top-controls {
+  pointer-events: auto;
   position: fixed;
   top: max(12px, env(safe-area-inset-top));
   left: max(12px, env(safe-area-inset-left));
-  max-width: min(90vw, 340px);
+  right: max(12px, env(safe-area-inset-right));
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 10px;
+  border-radius: 12px;
+  background: rgba(8, 8, 8, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.side-toggle {
+  display: flex;
+  gap: 6px;
+}
+
+.side-toggle button,
+#clear-selection,
+.formation-select-label select,
+.unit-panel__close {
+  min-height: 40px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: #262626;
+  color: #f2f2f2;
+  padding: 8px 12px;
+  font-size: 0.95rem;
+}
+
+.side-toggle button.is-active {
+  background: #5a5032;
+  border-color: #d7b86e;
+}
+
+.formation-select-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+}
+
+.formation-select-label select {
+  min-width: 120px;
+}
+
+.hud {
+  position: fixed;
+  top: calc(max(12px, env(safe-area-inset-top)) + 72px);
+  left: max(12px, env(safe-area-inset-left));
+  max-width: min(90vw, 380px);
   padding: 12px;
   border-radius: 12px;
   background: rgba(8, 8, 8, 0.75);
@@ -37,6 +96,7 @@ body {
   line-height: 1.4;
   pointer-events: none;
   border: 1px solid rgba(255, 255, 255, 0.2);
+  z-index: 4;
 }
 
 .hud__title {
@@ -47,4 +107,97 @@ body {
 .hud__small {
   opacity: 0.85;
   font-size: 0.82rem;
+}
+
+.unit-panel {
+  pointer-events: auto;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: 45vh;
+  padding: 10px 14px 14px;
+  border-top-left-radius: 14px;
+  border-top-right-radius: 14px;
+  background: rgba(12, 12, 12, 0.92);
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  transform: translateY(105%);
+  transition: transform 140ms ease-out;
+  overflow-y: auto;
+}
+
+.unit-panel.is-open {
+  transform: translateY(0);
+}
+
+.unit-panel__handle {
+  width: 42px;
+  height: 5px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.35);
+  margin: 0 auto 10px;
+}
+
+.unit-panel__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.unit-panel__title {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.unit-panel__stats {
+  margin: 10px 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.unit-panel__stats div {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 6px;
+}
+
+.unit-panel__stats dt {
+  font-size: 0.78rem;
+  opacity: 0.75;
+}
+
+.unit-panel__stats dd {
+  margin: 4px 0 0;
+  font-size: 0.92rem;
+}
+
+.unit-panel__subhead {
+  margin: 6px 0;
+  font-size: 0.95rem;
+}
+
+.unit-panel__list {
+  margin: 0;
+  padding-left: 20px;
+}
+
+@media (max-width: 640px) {
+  .top-controls {
+    gap: 6px;
+  }
+
+  .formation-select-label {
+    flex: 1;
+    justify-content: space-between;
+  }
+
+  .formation-select-label select {
+    flex: 1;
+  }
+
+  .hud {
+    max-width: calc(100vw - 24px);
+  }
 }

@@ -4,29 +4,86 @@ import { InputController } from './engine/input';
 import { createHexDisc } from './engine/hex/grid';
 import { drawHexGrid, drawUnits, getUnitTokenRadius } from './engine/hex/render';
 import { CanvasSurface } from './engine/render/canvas';
-import { initialGameState } from './game/state';
+import {
+  getAvailableFormations,
+  getSelectedUnit,
+  getUnitsForFormation,
+  initialGameState
+} from './game/state';
+import type { Side } from './game/units/model';
+import { createControls } from './ui/controls';
 import { renderHud } from './ui/hud';
+import { createUnitPanel } from './ui/panel';
 
 const HEX_SIZE = 28;
 const GRID_RADIUS = 21;
 
 const canvas = document.querySelector<HTMLCanvasElement>('#app-canvas');
 const hud = document.querySelector<HTMLDivElement>('#hud');
+const controlsRoot = document.querySelector<HTMLDivElement>('#controls-root');
+const panelRoot = document.querySelector<HTMLDivElement>('#panel-root');
 
-if (!canvas || !hud) {
+if (!canvas || !hud || !controlsRoot || !panelRoot) {
   throw new Error('Missing root UI elements');
 }
 
-const surface = new CanvasSurface(canvas);
+const canvasEl = canvas;
+const hudEl = hud;
+const controlsRootEl = controlsRoot;
+const panelRootEl = panelRoot;
+
+const surface = new CanvasSurface(canvasEl);
 const camera = new Camera();
 const hexes = createHexDisc(GRID_RADIUS);
 const gameState = structuredClone(initialGameState);
 
-camera.x = canvas.clientWidth / 2;
-camera.y = canvas.clientHeight / 2;
+camera.x = canvasEl.clientWidth / 2;
+camera.y = canvasEl.clientHeight / 2;
+
+function setSide(side: Side): void {
+  gameState.selectedSide = side;
+  const formations = getAvailableFormations(gameState.units, side);
+  gameState.selectedFormationId = formations[0]?.id ?? '';
+  gameState.selectedUnitId = null;
+}
+
+function renderUi(): void {
+  const formations = getAvailableFormations(gameState.units, gameState.selectedSide);
+  controls.render({
+    selectedSide: gameState.selectedSide,
+    selectedFormationId: gameState.selectedFormationId,
+    formations
+  });
+
+  const selectedUnit = getSelectedUnit(gameState.units, gameState.selectedUnitId);
+  panel.render(selectedUnit);
+  renderHud(hudEl, gameState);
+}
+
+const controls = createControls(controlsRootEl, {
+  onSideChange(side) {
+    setSide(side);
+    renderUi();
+  },
+  onFormationChange(formationId) {
+    gameState.selectedFormationId = formationId;
+    gameState.selectedUnitId = null;
+    renderUi();
+  },
+  onClearSelection() {
+    gameState.selectedUnitId = null;
+    gameState.selectedHex = null;
+    renderUi();
+  }
+});
+
+const panel = createUnitPanel(panelRootEl, () => {
+  gameState.selectedUnitId = null;
+  renderUi();
+});
 
 new InputController(
-  canvas,
+  canvasEl,
   camera,
   HEX_SIZE,
   {
@@ -38,16 +95,16 @@ new InputController(
         gameState.selectedUnitId = null;
         gameState.selectedHex = hex;
       }
-      renderHud(hud, gameState);
+      renderUi();
     }
   },
   {
-    getUnits: () => gameState.units,
+    getSelectableUnits: () => getUnitsForFormation(gameState.units, gameState.selectedFormationId),
     getUnitHitRadius: () => getUnitTokenRadius(HEX_SIZE)
   }
 );
 
-renderHud(hud, gameState);
+renderUi();
 
 function frame(): void {
   surface.clear();
@@ -65,7 +122,13 @@ function frame(): void {
     gameState.selectedHex
   );
 
-  drawUnits(surface.ctx, gameState.units, HEX_SIZE, gameState.selectedUnitId);
+  drawUnits(
+    surface.ctx,
+    gameState.units,
+    HEX_SIZE,
+    gameState.selectedUnitId,
+    gameState.selectedFormationId
+  );
 
   requestAnimationFrame(frame);
 }

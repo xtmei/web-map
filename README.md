@@ -1,7 +1,8 @@
 # Stalingrad Hex Wargame Prototype
 
 PR1 delivered a **Hex Playground** foundation using **Vite + Vanilla TypeScript + HTML Canvas 2D**.
-PR2 extends that playground with **unit tokens and selection**.
+PR2 extended that playground with **unit tokens and selection**.
+PR3 adds **mobile-first controls, controllable formation filtering, and a selected-unit bottom sheet**.
 
 ## Run
 
@@ -37,11 +38,15 @@ Implemented:
 - Empty-hex tap clears selected unit and selects hex
 - HUD now shows selected hex plus detailed selected unit info
 
-Not in PR2:
-- Movement
-- Combat
-- OOB hierarchy UI
-- Unit bottom sheet panel
+## PR3 Scope (Controls + Formation Filter + Bottom Sheet)
+
+Implemented:
+- Mobile-friendly top controls (Axis/Soviet side toggle + formation dropdown + clear button)
+- Formation-aware unit control model (`formationId`, `formationName`)
+- Side switch auto-selects first formation for that side and clears selected unit
+- Only selected-formation units are selectable; others remain visible but disabled/greyed
+- Bottom sheet unit panel with unit details and derived structure placeholders
+- Tapping empty hex still clears selected unit and selects that hex
 
 ## PR1 Manual QA Checklist
 
@@ -60,8 +65,16 @@ Not in PR2:
 5. Clicking/tapping an empty hex clears unit selection and selects that hex.
 6. Pan/zoom still works on desktop and mobile touch without breaking selection.
 
-## PR3 Plan (not implemented)
+## PR3 Manual QA Checklist
 
-- Add a mobile-friendly bottom sheet panel for selected unit details/actions.
-- Keep canvas interaction model from PR2 while surfacing unit metadata in the sheet.
-- Wire panel visibility to selected unit state (no movement/combat yet).
+1. `npm install && npm run dev` works.
+2. Top bar shows Side toggle + Formation dropdown.
+3. Switching Side updates Formation options and filters controllable units accordingly.
+4. Only units in the selected Formation are selectable; others are disabled/greyed.
+5. Selecting a controllable unit opens bottom sheet and shows correct info (name/side/echelon/strength/morale/pos).
+6. Tapping empty hex closes panel (unit deselected) and selects hex.
+7. Pan/zoom still works; UI clicks do not accidentally pan the map.
+
+## Roadmap
+
+- **PR4 (next):** movement + path preview for selected controllable units (not implemented in PR3).
