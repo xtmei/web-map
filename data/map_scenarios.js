@@ -1,0 +1,83 @@
+window.BATTLE_MAP_LIBRARY = {
+  stalingrad_grand_1942: {
+    id: 'stalingrad_grand_1942',
+    name: '斯大林格勒全域图',
+    tier: '军级细化图层',
+    cols: 56,
+    rows: 40,
+    river: {
+      baseRatio: 0.68,
+      width: 2,
+      primaryAmp: 2.4,
+      primaryFreq: 0.28,
+      secondaryAmp: 1.3,
+      secondaryFreq: 0.11,
+      phase: 0.9
+    },
+    cityCore: { qRatio: 0.46, rRatio: 0.5, coreRadius: 5, innerRadius: 10, suburbRadius: 16 },
+    bridgeRows: [5, 9, 13, 17, 22, 27, 32, 36],
+    railRows: [8, 12, 16, 21, 26, 31],
+    roadColumns: [10, 16, 22, 29, 35],
+    eastPortInterval: 5,
+    eastPortOffset: 1,
+    northRidgeBand: { rMax: 8, qMinOffset: -10, qMaxOffset: 11 },
+    southRidgeBand: { rMinFromBottom: 8, qMinOffset: -9, qMaxOffset: 10 },
+    mamayev: { q: 19, r: 18, radius: 3 },
+    gridLabelStepQ: 7,
+    gridLabelStepR: 5,
+    overlays: [
+      { type: 'rect', terrain: 'INDUSTRY', district: '拖拉机厂群', q1: 22, q2: 30, r1: 7, r2: 12, elevationBias: 1, requireWestBank: true, priority: 32 },
+      { type: 'rect', terrain: 'INDUSTRY', district: '街垒工厂群', q1: 24, q2: 31, r1: 13, r2: 19, elevationBias: 1, requireWestBank: true, priority: 32 },
+      { type: 'rect', terrain: 'RUINS', district: '工人街区废墟', q1: 18, q2: 29, r1: 20, r2: 28, requireWestBank: true, priority: 30 },
+      { type: 'line', terrain: 'TRENCH', district: '工厂北侧壕沟', thickness: 1, points: [[14, 11], [19, 12], [25, 13], [32, 13]], requireWestBank: true, priority: 40 },
+      { type: 'line', terrain: 'TRENCH', district: '中央防御壕', thickness: 1, points: [[11, 19], [17, 20], [24, 20], [30, 21]], requireWestBank: true, priority: 40 },
+      { type: 'line', terrain: 'TRENCH', district: '南部防御壕', thickness: 1, points: [[9, 27], [15, 27], [22, 28], [28, 29]], requireWestBank: true, priority: 40 },
+      { type: 'circle', terrain: 'BUNKER', district: '街垒据点', q: 25, r: 11, radius: 1, requireWestBank: true, priority: 55 },
+      { type: 'circle', terrain: 'BUNKER', district: '重炮观察堡', q: 20, r: 18, radius: 1, requireWestBank: true, priority: 55 },
+      { type: 'circle', terrain: 'WOODS', district: '西北防护林', q: 8, r: 6, radius: 2, requireWestBank: true, priority: 26 },
+      { type: 'circle', terrain: 'WOODS', district: '南侧河岸林地', q: 13, r: 33, radius: 2, requireWestBank: true, priority: 26 },
+      { type: 'circle', terrain: 'MARSH', district: '南部低洼泥沼', q: 15, r: 31, radius: 2, requireWestBank: true, priority: 24 },
+      { type: 'circle', terrain: 'MARSH', district: '北岸湿地', q: 11, r: 9, radius: 2, requireWestBank: true, priority: 24 }
+    ]
+  },
+  factory_corridor_1942: {
+    id: 'factory_corridor_1942',
+    name: '北工厂走廊图',
+    tier: '战术细化图层',
+    cols: 48,
+    rows: 34,
+    river: {
+      baseRatio: 0.66,
+      width: 2,
+      primaryAmp: 1.8,
+      primaryFreq: 0.31,
+      secondaryAmp: 1.2,
+      secondaryFreq: 0.15,
+      phase: 0.4
+    },
+    cityCore: { qRatio: 0.43, rRatio: 0.46, coreRadius: 4, innerRadius: 8, suburbRadius: 13 },
+    bridgeRows: [6, 10, 15, 20, 25, 29],
+    railRows: [7, 11, 14, 18, 22, 27],
+    roadColumns: [8, 14, 19, 24, 30],
+    eastPortInterval: 4,
+    eastPortOffset: 0,
+    northRidgeBand: { rMax: 6, qMinOffset: -8, qMaxOffset: 8 },
+    southRidgeBand: { rMinFromBottom: 7, qMinOffset: -7, qMaxOffset: 8 },
+    mamayev: { q: 15, r: 14, radius: 2 },
+    gridLabelStepQ: 6,
+    gridLabelStepR: 4,
+    overlays: [
+      { type: 'rect', terrain: 'INDUSTRY', district: '拖拉机厂东区', q1: 17, q2: 24, r1: 6, r2: 11, requireWestBank: true, elevationBias: 1, priority: 35 },
+      { type: 'rect', terrain: 'INDUSTRY', district: '街垒厂区', q1: 18, q2: 25, r1: 12, r2: 18, requireWestBank: true, elevationBias: 1, priority: 35 },
+      { type: 'rect', terrain: 'RUINS', district: '北工人街区', q1: 14, q2: 24, r1: 19, r2: 24, requireWestBank: true, priority: 30 },
+      { type: 'line', terrain: 'TRENCH', district: '红十月堑壕', thickness: 1, points: [[9, 10], [14, 11], [20, 12], [26, 12]], requireWestBank: true, priority: 42 },
+      { type: 'line', terrain: 'TRENCH', district: '中央壕沟', thickness: 1, points: [[8, 17], [14, 18], [19, 18], [25, 19]], requireWestBank: true, priority: 42 },
+      { type: 'line', terrain: 'TRENCH', district: '南工厂壕沟', thickness: 1, points: [[8, 24], [12, 24], [18, 25], [23, 25]], requireWestBank: true, priority: 42 },
+      { type: 'circle', terrain: 'BUNKER', district: '北厂掩体', q: 20, r: 10, radius: 1, requireWestBank: true, priority: 55 },
+      { type: 'circle', terrain: 'BUNKER', district: '南厂掩体', q: 18, r: 22, radius: 1, requireWestBank: true, priority: 55 },
+      { type: 'circle', terrain: 'WOODS', district: '西侧防护林', q: 7, r: 8, radius: 2, requireWestBank: true, priority: 25 },
+      { type: 'circle', terrain: 'WOODS', district: '南侧零散林地', q: 10, r: 28, radius: 2, requireWestBank: true, priority: 25 },
+      { type: 'circle', terrain: 'MARSH', district: '南部湿地', q: 13, r: 27, radius: 2, requireWestBank: true, priority: 24 }
+    ]
+  }
+};
