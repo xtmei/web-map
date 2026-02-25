@@ -10,5 +10,7 @@ export type Unit = {
   echelon: 'Army' | 'Corps' | 'Division' | 'Regiment' | 'Battalion';
   strength: number;
   morale: number;
+  mpMax: number;
+  mpRemaining: number;
   pos: { q: number; r: number };
 };

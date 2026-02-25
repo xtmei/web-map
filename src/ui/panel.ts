@@ -59,6 +59,7 @@ export function createUnitPanel(root: HTMLElement, onClose: () => void): UnitPan
           <div><dt>Formation</dt><dd>${unit.formationName}</dd></div>
           <div><dt>Strength</dt><dd>${unit.strength}</dd></div>
           <div><dt>Morale</dt><dd>${unit.morale}</dd></div>
+          <div><dt>MP</dt><dd>${unit.mpRemaining}/${unit.mpMax}</dd></div>
           <div><dt>Position</dt><dd>q=${unit.pos.q}, r=${unit.pos.r}</dd></div>
         </dl>
         <h3 class="unit-panel__subhead">Structure (placeholder)</h3>

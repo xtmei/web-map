@@ -15,8 +15,28 @@ const TERRAIN_STYLES: Record<TerrainType, { fill: string; stroke: string }> = {
   clear: { fill: 'rgba(70, 70, 70, 0.6)', stroke: 'rgba(170, 170, 170, 0.45)' },
   steppe: { fill: 'rgba(102, 115, 74, 0.72)', stroke: 'rgba(176, 194, 129, 0.5)' },
   urban: { fill: 'rgba(98, 87, 79, 0.8)', stroke: 'rgba(196, 175, 149, 0.55)' },
-  river: { fill: 'rgba(55, 88, 134, 0.82)', stroke: 'rgba(126, 173, 227, 0.65)' }
+  river: { fill: 'rgba(55, 88, 134, 0.82)', stroke: 'rgba(126, 173, 227, 0.65)' },
+  factory: { fill: 'rgba(95, 83, 83, 0.82)', stroke: 'rgba(189, 161, 161, 0.58)' },
+  hill: { fill: 'rgba(109, 100, 74, 0.78)', stroke: 'rgba(198, 180, 131, 0.58)' },
+  swamp: { fill: 'rgba(67, 101, 90, 0.78)', stroke: 'rgba(132, 184, 166, 0.54)' },
+  mud: { fill: 'rgba(94, 78, 58, 0.78)', stroke: 'rgba(181, 156, 124, 0.52)' }
 };
+
+function drawHexPath(ctx: CanvasRenderingContext2D, hex: Axial, size: number): void {
+  const center = axialToPixel(hex, size);
+  ctx.beginPath();
+  for (let i = 0; i < 6; i += 1) {
+    const angle = ((60 * i - 30) * Math.PI) / 180;
+    const x = center.x + size * Math.cos(angle);
+    const y = center.y + size * Math.sin(angle);
+    if (i === 0) {
+      ctx.moveTo(x, y);
+    } else {
+      ctx.lineTo(x, y);
+    }
+  }
+  ctx.closePath();
+}
 
 export function drawHexGrid(
   ctx: CanvasRenderingContext2D,
@@ -27,30 +47,68 @@ export function drawHexGrid(
   terrainByHex: Map<string, TerrainType>
 ): void {
   for (const hex of hexes) {
-    const center = axialToPixel(hex, size);
     const isSelected = selected?.q === hex.q && selected.r === hex.r;
     const terrain = terrainByHex.get(`${hex.q},${hex.r}`) ?? 'clear';
     const terrainStyle = TERRAIN_STYLES[terrain];
 
-    ctx.beginPath();
-    for (let i = 0; i < 6; i += 1) {
-      const angle = ((60 * i - 30) * Math.PI) / 180;
-      const x = center.x + size * Math.cos(angle);
-      const y = center.y + size * Math.sin(angle);
-      if (i === 0) {
-        ctx.moveTo(x, y);
-      } else {
-        ctx.lineTo(x, y);
-      }
-    }
-    ctx.closePath();
-
+    drawHexPath(ctx, hex, size);
     ctx.fillStyle = isSelected ? '#5d3628' : terrainStyle?.fill ?? style.fill;
     ctx.strokeStyle = isSelected ? '#ffd38f' : terrainStyle?.stroke ?? style.stroke;
     ctx.lineWidth = isSelected ? style.lineWidth * 1.75 : style.lineWidth;
     ctx.fill();
     ctx.stroke();
   }
+}
+
+export function drawReachableOverlay(
+  ctx: CanvasRenderingContext2D,
+  hexes: Axial[],
+  size: number
+): void {
+  ctx.save();
+  ctx.fillStyle = 'rgba(78, 183, 255, 0.2)';
+  ctx.strokeStyle = 'rgba(78, 183, 255, 0.5)';
+  ctx.lineWidth = Math.max(1.1, size * 0.05);
+
+  for (const hex of hexes) {
+    drawHexPath(ctx, hex, size);
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+export function drawPathOverlay(ctx: CanvasRenderingContext2D, path: Axial[], size: number): void {
+  if (path.length === 0) {
+    return;
+  }
+
+  ctx.save();
+
+  for (const hex of path) {
+    drawHexPath(ctx, hex, size);
+    ctx.strokeStyle = 'rgba(255, 216, 110, 0.85)';
+    ctx.lineWidth = Math.max(1.8, size * 0.1);
+    ctx.stroke();
+  }
+
+  ctx.beginPath();
+  path.forEach((hex, index) => {
+    const center = axialToPixel(hex, size);
+    if (index === 0) {
+      ctx.moveTo(center.x, center.y);
+    } else {
+      ctx.lineTo(center.x, center.y);
+    }
+  });
+  ctx.strokeStyle = 'rgba(255, 231, 164, 0.95)';
+  ctx.lineWidth = Math.max(2.4, size * 0.16);
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+
+  ctx.restore();
 }
 
 export function getUnitTokenRadius(hexSize: number): number {
