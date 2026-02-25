@@ -10,11 +10,17 @@ export function renderHud(container: HTMLElement, state: GameState): void {
     ? `${selectedUnit.name} (${selectedUnit.side}) • ${selectedUnit.echelon} • ${selectedUnit.formationName}`
     : '(none)';
 
+  const errorHtml = state.errorMessage
+    ? `<div class="hud__error" role="alert">Scenario load error: ${state.errorMessage}</div>`
+    : '';
+
   container.innerHTML = `
-    <div class="hud__title">Stalingrad Hex Playground (PR3)</div>
+    <div class="hud__title">Stalingrad Hex Playground (PR4)</div>
+    <div>Scenario: ${state.scenarioName || 'none loaded'}</div>
     <div>Controlling: ${state.selectedSide} • ${state.selectedFormationId || 'none'}</div>
     <div>${selectedHex}</div>
     <div>Selected unit: ${unitText}</div>
     <div class="hud__small">Drag: pan • Wheel/pinch: zoom • Tap/click: select controllable unit or hex</div>
+    ${errorHtml}
   `;
 }
