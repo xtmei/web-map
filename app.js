@@ -839,7 +839,7 @@ function drawSelectionOverlay() {
 
 function mousePressed(event) {
   if (millis() < suppressMouseUntil) return false;
-  if (event && isPointerOverUI(event.clientX, event.clientY)) return false;
+  if (event && isPointerOverUI(event.clientX, event.clientY)) return true;
   handleMapTap(mouseX, mouseY);
   return false;
 }
@@ -856,6 +856,7 @@ function mouseWheel(event) {
 function touchStarted() {
   suppressMouseUntil = millis() + 450;
   if (!touches.length) return false;
+  if (isPointerOverUI(touches[0].x, touches[0].y)) return true;
   if (touches.length >= 2) {
     startPinch(touches[0], touches[1]);
   } else {
@@ -866,6 +867,7 @@ function touchStarted() {
 
 function touchMoved() {
   suppressMouseUntil = millis() + 450;
+  if (touches.length && isPointerOverUI(touches[0].x, touches[0].y)) return true;
   if (touches.length >= 2) {
     const a = touches[0];
     const b = touches[1];
@@ -899,6 +901,7 @@ function touchMoved() {
 
 function touchEnded() {
   suppressMouseUntil = millis() + 450;
+  if (touches.length && isPointerOverUI(touches[0].x, touches[0].y)) return true;
   if (touches.length >= 2) {
     startPinch(touches[0], touches[1]);
     return false;
