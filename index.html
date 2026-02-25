@@ -26,6 +26,11 @@
       font-family: "Noto Sans SC", "Microsoft YaHei", system-ui, sans-serif;
       color: var(--text);
       overflow: hidden;
+      overscroll-behavior: none;
+    }
+    canvas {
+      display: block;
+      touch-action: none;
     }
     #ui {
       position: fixed;
@@ -35,7 +40,7 @@
       grid-template-columns: min(350px, 32vw) 1fr min(350px, 30vw);
       grid-template-rows: 1fr auto;
       gap: 10px;
-      padding: 10px;
+      padding: calc(10px + env(safe-area-inset-top)) 10px calc(10px + env(safe-area-inset-bottom));
     }
     .panel {
       pointer-events: auto;
@@ -63,9 +68,11 @@
       padding: 8px;
       font-weight: 700;
       font-size: 14px;
+      min-height: 44px;
       cursor: pointer;
       pointer-events: auto;
       transition: .16s;
+      touch-action: manipulation;
     }
     .btn:hover { filter: brightness(1.1); }
     .btn.active { outline: 2px solid #6ca7ff; }
@@ -100,10 +107,53 @@
     select {
       padding: 8px; border-radius: 8px; background: #111c30; border: 1px solid #2d4468; color: var(--text);
     }
+    #mobileToggles {
+      position: fixed;
+      top: calc(10px + env(safe-area-inset-top));
+      right: 10px;
+      z-index: 9;
+      display: none;
+      gap: 8px;
+      pointer-events: auto;
+    }
+    #mobileToggles .btn {
+      min-width: 72px;
+      padding: 8px 10px;
+      font-size: 12px;
+    }
     @media (max-width: 980px) {
-      #ui { grid-template-columns: 1fr; grid-template-rows: auto auto auto; }
-      #rightPanel { grid-column: 1; }
-      #bottomBar { grid-template-columns: repeat(4, minmax(70px, 1fr)); }
+      #ui {
+        grid-template-columns: 1fr;
+        grid-template-rows: 1fr;
+        padding: calc(8px + env(safe-area-inset-top)) 8px calc(8px + env(safe-area-inset-bottom));
+      }
+      #leftPanel, #rightPanel {
+        display: none;
+        position: fixed;
+        left: 8px;
+        right: 8px;
+        bottom: calc(124px + env(safe-area-inset-bottom));
+        max-height: 44vh;
+        z-index: 8;
+      }
+      body.mobile-show-left #leftPanel,
+      body.mobile-show-right #rightPanel {
+        display: block;
+      }
+      #bottomBar {
+        position: fixed;
+        left: 8px;
+        right: 8px;
+        bottom: calc(8px + env(safe-area-inset-bottom));
+        grid-column: 1;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+      #mobileToggles {
+        display: flex;
+      }
+      .btn {
+        font-size: 13px;
+      }
     }
   </style>
 </head>
@@ -124,6 +174,12 @@
     </div>
   </div>
 
+  <div id="mobileToggles">
+    <button class="btn" id="btnPanelLeft">态势</button>
+    <button class="btn" id="btnPanelRight">单位</button>
+    <button class="btn" id="btnFit">适配</button>
+  </div>
+
   <div id="ui">
     <aside id="leftPanel" class="panel"></aside>
     <aside id="rightPanel" class="panel"></aside>
@@ -142,26 +198,49 @@
 <script>
 let W, H;
 let hexSize = 30;
-let originX = 30, originY = 40;
-const COLS = 14, ROWS = 10;
+let originX = 24;
+let originY = 28;
+const COLS = 14;
+const ROWS = 10;
+const MIN_ZOOM = 0.62;
+const MAX_ZOOM = 1.85;
+const CAMERA_MARGIN = 18;
+const TAP_DRAG_THRESHOLD = 8;
+
+const camera = { x: 0, y: 0, zoom: 1 };
+const gesture = {
+  isPanning: false,
+  isPinch: false,
+  moved: false,
+  startX: 0,
+  startY: 0,
+  lastX: 0,
+  lastY: 0,
+  pinchStartDist: 0,
+  pinchStartZoom: 1
+};
+const panelState = { left: false, right: false };
+let suppressMouseUntil = 0;
+let uiDirty = true;
+let reachableCache = { key: '', tiles: [] };
 
 const TERRAIN = {
-  STEPPE: { name:'草原', cost:1, def:0, color:[65,90,74] },
-  CITY: { name:'城区', cost:2, def:2, color:[96,96,105] },
-  INDUSTRY: { name:'工业区', cost:2, def:3, color:[114,92,84] },
-  HILL: { name:'高地', cost:2, def:1, color:[92,110,86] },
-  RAIL: { name:'铁路', cost:1, def:0, color:[120,120,126] },
-  RIVER: { name:'伏尔加河', cost:99, def:0, color:[48,78,140] },
-  BRIDGE: { name:'桥梁', cost:1, def:0, color:[155,128,77] },
-  EAST: { name:'东岸', cost:1, def:0, color:[72,85,82] }
+  STEPPE: { name: '草原', cost: 1, def: 0, color: [65, 90, 74] },
+  CITY: { name: '城区', cost: 2, def: 2, color: [96, 96, 105] },
+  INDUSTRY: { name: '工业区', cost: 2, def: 3, color: [114, 92, 84] },
+  HILL: { name: '高地', cost: 2, def: 1, color: [92, 110, 86] },
+  RAIL: { name: '铁路', cost: 1, def: 0, color: [120, 120, 126] },
+  RIVER: { name: '伏尔加河', cost: 99, def: 0, color: [48, 78, 140] },
+  BRIDGE: { name: '桥梁', cost: 1, def: 0, color: [155, 128, 77] },
+  EAST: { name: '东岸', cost: 1, def: 0, color: [72, 85, 82] }
 };
 
 let objectives = [
-  { id:'KURGAN', q:4, r:4, vp:2, name:'马马耶夫岗', owner:null },
-  { id:'STATION', q:3, r:3, vp:2, name:'火车站', owner:null },
-  { id:'REDOCT', q:5, r:5, vp:3, name:'红十月工厂', owner:null },
-  { id:'LANDING', q:8, r:4, vp:2, name:'中央渡口', owner:null },
-  { id:'ELEVATOR', q:2, r:7, vp:2, name:'粮仓', owner:null }
+  { id: 'KURGAN', q: 4, r: 4, vp: 2, name: '马马耶夫岗', owner: null },
+  { id: 'STATION', q: 3, r: 3, vp: 2, name: '火车站', owner: null },
+  { id: 'REDOCT', q: 5, r: 5, vp: 3, name: '红十月工厂', owner: null },
+  { id: 'LANDING', q: 8, r: 4, vp: 2, name: '中央渡口', owner: null },
+  { id: 'ELEVATOR', q: 2, r: 7, vp: 2, name: '粮仓', owner: null }
 ];
 
 const mapData = new Map();
@@ -178,24 +257,59 @@ let state = {
   aiSide: 'SOV',
   difficulty: 'normal',
   maxTurn: 14,
-  vp: { GER:0, SOV:0 },
-  support: { GER:{arty:1, air:1, supply:1}, SOV:{arty:1, air:0, supply:1} }
+  vp: { GER: 0, SOV: 0 },
+  support: { GER: { arty: 1, air: 1, supply: 1 }, SOV: { arty: 1, air: 0, supply: 1 } }
 };
 
 function setup() {
   W = windowWidth;
   H = windowHeight;
   createCanvas(W, H);
+  pixelDensity(1);
+  frameRate(40);
   angleMode(RADIANS);
   textFont('monospace');
+  recalcScale();
   initMap();
   bindUI();
+  resetGame();
+  fitCameraToBattlefield();
 }
 
 function windowResized() {
-  W = windowWidth; H = windowHeight;
+  W = windowWidth;
+  H = windowHeight;
   resizeCanvas(W, H);
-  hexSize = floor(constrain(W / 34, 20, 36));
+  recalcScale();
+  updateMobilePanelClass();
+  fitCameraToBattlefield();
+  markUIDirty();
+}
+
+function recalcScale() {
+  const base = min(W, H);
+  hexSize = floor(constrain(base / 22, 19, 34));
+  originX = 24;
+  originY = 28;
+  invalidateReachableCache();
+}
+
+function markUIDirty() {
+  uiDirty = true;
+}
+
+function invalidateReachableCache() {
+  reachableCache.key = '';
+  reachableCache.tiles = [];
+}
+
+function getReachableCached(u) {
+  const cacheKey = `${u.id}|${u.q},${u.r}|${u.mpLeft}|${u.acted}|${state.active}|${state.turn}`;
+  if (reachableCache.key === cacheKey) return reachableCache.tiles;
+  const tiles = reachable(u);
+  reachableCache.key = cacheKey;
+  reachableCache.tiles = tiles;
+  return tiles;
 }
 
 function startGame() {
@@ -206,6 +320,7 @@ function startGame() {
   state.difficulty = diff;
   resetGame();
   document.getElementById('startOverlay').style.display = 'none';
+  fitCameraToBattlefield();
 }
 
 function resetGame() {
@@ -216,20 +331,24 @@ function resetGame() {
   gameOver = false;
   state.turn = 1;
   state.active = 'GER';
-  state.vp = { GER:0, SOV:0 };
-  state.support = { GER:{arty:1, air:1, supply:1}, SOV:{arty:1, air:0, supply:1} };
+  state.vp = { GER: 0, SOV: 0 };
+  state.support = { GER: { arty: 1, air: 1, supply: 1 }, SOV: { arty: 1, air: 0, supply: 1 } };
   objectives.forEach(o => o.owner = null);
+  closeMobilePanels();
+  setMode('MOVE');
+  invalidateReachableCache();
 
-  addUnit({ side:'GER', name:'71步兵师 / I营', q:0, r:3, atk:7, def:6, mp:5, hp:6, morale:7, army:'6集团军' });
-  addUnit({ side:'GER', name:'24装甲师 / 战斗群', q:1, r:5, atk:9, def:6, mp:6, hp:5, morale:7, armor:1, army:'6集团军' });
-  addUnit({ side:'GER', name:'100猎兵师 / I营', q:0, r:7, atk:7, def:7, mp:5, hp:6, morale:8, army:'6集团军' });
+  addUnit({ side: 'GER', name: '71步兵师 / I营', q: 0, r: 3, atk: 7, def: 6, mp: 5, hp: 6, morale: 7, army: '6集团军' });
+  addUnit({ side: 'GER', name: '24装甲师 / 战斗群', q: 1, r: 5, atk: 9, def: 6, mp: 6, hp: 5, morale: 7, armor: 1, army: '6集团军' });
+  addUnit({ side: 'GER', name: '100猎兵师 / I营', q: 0, r: 7, atk: 7, def: 7, mp: 5, hp: 6, morale: 8, army: '6集团军' });
 
-  addUnit({ side:'SOV', name:'62集团军 / NKVD营', q:7, r:4, atk:7, def:8, mp:5, hp:6, morale:8, army:'62集团军' });
-  addUnit({ side:'SOV', name:'13近卫师 / II营', q:12, r:3, atk:8, def:7, mp:5, hp:6, morale:8, army:'62集团军' });
-  addUnit({ side:'SOV', name:'海军步兵营', q:12, r:6, atk:8, def:6, mp:5, hp:5, morale:7, army:'62集团军' });
+  addUnit({ side: 'SOV', name: '62集团军 / NKVD营', q: 7, r: 4, atk: 7, def: 8, mp: 5, hp: 6, morale: 8, army: '62集团军' });
+  addUnit({ side: 'SOV', name: '13近卫师 / II营', q: 12, r: 3, atk: 8, def: 7, mp: 5, hp: 6, morale: 8, army: '62集团军' });
+  addUnit({ side: 'SOV', name: '海军步兵营', q: 12, r: 6, atk: 8, def: 6, mp: 5, hp: 5, morale: 7, army: '62集团军' });
 
   refreshSide();
   log('战役开始：占领目标点并坚持到终局。');
+  markUIDirty();
 }
 
 function initMap() {
@@ -242,7 +361,9 @@ function initMap() {
       if ((q === 9 && r === 3) || (q === 9 && r === 6)) t = TERRAIN.BRIDGE;
       if (q >= 2 && q <= 8 && r >= 2 && r <= 8) t = TERRAIN.CITY;
       if ((q === 5 && r === 5) || (q === 5 && r === 6) || (q === 6 && r === 5)) t = TERRAIN.INDUSTRY;
-      if ((r === 3 && q >= 1 && q <= 8) || (r === 4 && q >= 2 && q <= 8)) if (t !== TERRAIN.RIVER && t !== TERRAIN.EAST) t = TERRAIN.RAIL;
+      if ((r === 3 && q >= 1 && q <= 8) || (r === 4 && q >= 2 && q <= 8)) {
+        if (t !== TERRAIN.RIVER && t !== TERRAIN.EAST) t = TERRAIN.RAIL;
+      }
       if (q === 4 && r === 4) t = TERRAIN.HILL;
       mapData.set(key(q, r), { q, r, terrain: t });
     }
@@ -250,19 +371,34 @@ function initMap() {
 }
 
 function addUnit(u) {
-  units.push({ ...u, id: `${u.side}_${Math.random().toString(36).slice(2,9)}`, mpLeft:u.mp, acted:false, supplied:true, entrenched:0, ammo:2, alive:true });
+  units.push({
+    ...u,
+    id: `${u.side}_${Math.random().toString(36).slice(2, 9)}`,
+    mpLeft: u.mp,
+    acted: false,
+    supplied: true,
+    entrenched: 0,
+    ammo: 2,
+    alive: true
+  });
 }
 
 function draw() {
   clear();
   background(10, 14, 24);
+
+  push();
+  translate(camera.x, camera.y);
+  scale(camera.zoom);
   drawHexes();
   drawObjectiveOverlay();
   drawUnits();
   drawSelectionOverlay();
-  updatePanels();
+  pop();
 
-  if (!gameOver && state.active === state.aiSide) {
+  if (uiDirty || frameCount % 20 === 0) updatePanels();
+
+  if (!gameOver && state.active === state.aiSide && !isStartOverlayVisible()) {
     runAI();
   }
 }
@@ -311,11 +447,14 @@ function drawUnits() {
     rect(p.x, p.y, hexSize * 1.6, hexSize * 0.9, 6);
 
     if (selected && selected.id === u.id) {
-      noFill(); stroke('#d5e7ff'); strokeWeight(2);
+      noFill();
+      stroke('#d5e7ff');
+      strokeWeight(2);
       rect(p.x, p.y, hexSize * 1.8, hexSize * 1.1, 8);
     }
 
-    noStroke(); fill(15);
+    noStroke();
+    fill(15);
     textSize(10);
     textAlign(CENTER, CENTER);
     text(`${u.hp}HP/${u.mpLeft}MP`, p.x, p.y + 1);
@@ -331,33 +470,247 @@ function drawUnits() {
 function drawSelectionOverlay() {
   if (!selected || gameOver) return;
   if (mode === 'MOVE' && selected.side === state.active) {
-    reachable(selected).forEach(t => {
+    getReachableCached(selected).forEach(t => {
       const p = hexToPixel(t.q, t.r);
-      noFill(); stroke(190, 220, 255, 120); strokeWeight(1.8);
+      noFill();
+      stroke(190, 220, 255, 120);
+      strokeWeight(1.8);
       hexShape(p.x, p.y);
-      noStroke(); fill(230,230,240,120); textSize(9); textAlign(CENTER, CENTER);
+      noStroke();
+      fill(230, 230, 240, 120);
+      textSize(9);
+      textAlign(CENTER, CENTER);
       text(t.mp, p.x, p.y);
     });
   }
   if (mode === 'ATTACK' && selected.side === state.active) {
     enemiesAdjacent(selected).forEach(e => {
       const p = hexToPixel(e.q, e.r);
-      noFill(); stroke(255, 120, 120, 160); strokeWeight(2); hexShape(p.x, p.y);
+      noFill();
+      stroke(255, 120, 120, 160);
+      strokeWeight(2);
+      hexShape(p.x, p.y);
     });
   }
   textAlign(LEFT, BASELINE);
 }
 
-function mousePressed() {
-  if (gameOver || mouseY > H - 100) return;
-  const h = pixelToHex(mouseX, mouseY);
+function mousePressed(event) {
+  if (millis() < suppressMouseUntil) return false;
+  if (event && isPointerOverUI(event.clientX, event.clientY)) return false;
+  handleMapTap(mouseX, mouseY);
+  return false;
+}
+
+function mouseWheel(event) {
+  if (isPointerOverUI(mouseX, mouseY)) return true;
+  const delta = event.deltaY || event.delta || 0;
+  const factor = delta < 0 ? 1.08 : 0.92;
+  const nextZoom = constrain(camera.zoom * factor, MIN_ZOOM, MAX_ZOOM);
+  zoomTo(nextZoom, mouseX, mouseY);
+  return false;
+}
+
+function touchStarted() {
+  suppressMouseUntil = millis() + 450;
+  if (!touches.length) return false;
+  if (touches.length >= 2) {
+    startPinch(touches[0], touches[1]);
+  } else {
+    startPan(touches[0].x, touches[0].y);
+  }
+  return false;
+}
+
+function touchMoved() {
+  suppressMouseUntil = millis() + 450;
+  if (touches.length >= 2) {
+    const a = touches[0];
+    const b = touches[1];
+    if (!gesture.isPinch) startPinch(a, b);
+    const mid = midpoint(a, b);
+    const dist = max(10, dist2D(a.x, a.y, b.x, b.y));
+    const nextZoom = constrain(gesture.pinchStartZoom * (dist / gesture.pinchStartDist), MIN_ZOOM, MAX_ZOOM);
+    zoomTo(nextZoom, mid.x, mid.y);
+    gesture.moved = true;
+    gesture.lastX = mid.x;
+    gesture.lastY = mid.y;
+    return false;
+  }
+  if (touches.length === 1) {
+    const t = touches[0];
+    if (!gesture.isPanning) startPan(t.x, t.y);
+    const dx = t.x - gesture.lastX;
+    const dy = t.y - gesture.lastY;
+    if (abs(dx) > 0 || abs(dy) > 0) {
+      gesture.moved = gesture.moved || dist2D(t.x, t.y, gesture.startX, gesture.startY) > TAP_DRAG_THRESHOLD;
+      camera.x += dx;
+      camera.y += dy;
+      clampCamera();
+      gesture.lastX = t.x;
+      gesture.lastY = t.y;
+    }
+  }
+  return false;
+}
+
+function touchEnded() {
+  suppressMouseUntil = millis() + 450;
+  if (touches.length >= 2) {
+    startPinch(touches[0], touches[1]);
+    return false;
+  }
+  if (touches.length === 1 && gesture.isPinch) {
+    startPan(touches[0].x, touches[0].y);
+    return false;
+  }
+  if (touches.length === 0) {
+    const shouldTap = !gesture.moved && !gesture.isPinch;
+    const tapX = gesture.lastX;
+    const tapY = gesture.lastY;
+    gesture.isPanning = false;
+    gesture.isPinch = false;
+    gesture.moved = false;
+    if (shouldTap) handleMapTap(tapX, tapY);
+  }
+  return false;
+}
+
+function startPan(x, y) {
+  gesture.isPanning = true;
+  gesture.isPinch = false;
+  gesture.moved = false;
+  gesture.startX = x;
+  gesture.startY = y;
+  gesture.lastX = x;
+  gesture.lastY = y;
+}
+
+function startPinch(a, b) {
+  const mid = midpoint(a, b);
+  gesture.isPinch = true;
+  gesture.isPanning = false;
+  gesture.moved = false;
+  gesture.lastX = mid.x;
+  gesture.lastY = mid.y;
+  gesture.pinchStartDist = max(10, dist2D(a.x, a.y, b.x, b.y));
+  gesture.pinchStartZoom = camera.zoom;
+}
+
+function midpoint(a, b) {
+  return { x: (a.x + b.x) * 0.5, y: (a.y + b.y) * 0.5 };
+}
+
+function dist2D(x1, y1, x2, y2) {
+  return Math.hypot(x1 - x2, y1 - y2);
+}
+
+function zoomTo(nextZoom, sx, sy) {
+  const wx = (sx - camera.x) / camera.zoom;
+  const wy = (sy - camera.y) / camera.zoom;
+  camera.zoom = nextZoom;
+  camera.x = sx - wx * camera.zoom;
+  camera.y = sy - wy * camera.zoom;
+  clampCamera();
+}
+
+function mapBounds() {
+  const sqrt3 = Math.sqrt(3);
+  const minX = originX - hexSize * 1.2;
+  const maxX = originX + hexSize * (sqrt3 * (COLS - 1) + (sqrt3 / 2) * (ROWS - 1)) + hexSize * 1.2;
+  const minY = originY - hexSize * 1.2;
+  const maxY = originY + hexSize * (1.5 * (ROWS - 1)) + hexSize * 1.2;
+  return { minX, maxX, minY, maxY, width: maxX - minX, height: maxY - minY };
+}
+
+function playableHeight() {
+  const bar = document.getElementById('bottomBar');
+  if (!bar) return H;
+  const rect = bar.getBoundingClientRect();
+  if (!rect || rect.top <= 40 || rect.top > H) return H;
+  return max(220, rect.top - 6);
+}
+
+function fitCameraToBattlefield() {
+  const b = mapBounds();
+  const viewW = W;
+  const viewH = playableHeight();
+  const fit = min((viewW - CAMERA_MARGIN * 2) / b.width, (viewH - CAMERA_MARGIN * 2) / b.height);
+  camera.zoom = constrain(fit, MIN_ZOOM, MAX_ZOOM);
+  camera.x = (viewW - b.width * camera.zoom) * 0.5 - b.minX * camera.zoom;
+  camera.y = (viewH - b.height * camera.zoom) * 0.5 - b.minY * camera.zoom;
+  clampCamera();
+}
+
+function clampCamera() {
+  const b = mapBounds();
+  const viewW = W;
+  const viewH = playableHeight();
+  const mapW = b.width * camera.zoom;
+  const mapH = b.height * camera.zoom;
+
+  if (mapW <= viewW - CAMERA_MARGIN * 2) {
+    camera.x = (viewW - mapW) * 0.5 - b.minX * camera.zoom;
+  } else {
+    const minX = viewW - CAMERA_MARGIN - b.maxX * camera.zoom;
+    const maxX = CAMERA_MARGIN - b.minX * camera.zoom;
+    camera.x = constrain(camera.x, minX, maxX);
+  }
+
+  if (mapH <= viewH - CAMERA_MARGIN * 2) {
+    camera.y = (viewH - mapH) * 0.5 - b.minY * camera.zoom;
+  } else {
+    const minY = viewH - CAMERA_MARGIN - b.maxY * camera.zoom;
+    const maxY = CAMERA_MARGIN - b.minY * camera.zoom;
+    camera.y = constrain(camera.y, minY, maxY);
+  }
+}
+
+function centerOnUnit(u) {
+  const p = hexToPixel(u.q, u.r);
+  const targetY = playableHeight() * 0.45;
+  camera.x = W * 0.5 - p.x * camera.zoom;
+  camera.y = targetY - p.y * camera.zoom;
+  clampCamera();
+}
+
+function isPointerOverUI(clientX, clientY) {
+  const el = document.elementFromPoint(clientX, clientY);
+  if (!el) return false;
+  return !!el.closest('#ui') || !!el.closest('#mobileToggles') || !!el.closest('#startOverlay');
+}
+
+function isStartOverlayVisible() {
+  const overlay = document.getElementById('startOverlay');
+  return overlay && overlay.style.display !== 'none';
+}
+
+function handleMapTap(px, py) {
+  if (gameOver) return;
+  if (py > playableHeight()) return;
+  const h = pixelToHex(px, py);
   if (!inMap(h.q, h.r)) return;
   const targetUnit = unitAt(h.q, h.r);
 
   if (targetUnit) {
-    if (targetUnit.side === state.active) { selected = targetUnit; return; }
-    if (selected && mode === 'ATTACK') doAttack(selected, targetUnit);
-    if (selected && mode === 'BOMBARD') doBombard(targetUnit);
+    if (targetUnit.side === state.active) {
+      selected = targetUnit;
+      invalidateReachableCache();
+      if (isMobileLayout()) {
+        panelState.right = true;
+        panelState.left = false;
+        updateMobilePanelClass();
+      }
+      markUIDirty();
+      return;
+    }
+    if (selected && mode === 'ATTACK') {
+      doAttack(selected, targetUnit);
+      return;
+    }
+    if (selected && mode === 'BOMBARD') {
+      doBombard(targetUnit);
+    }
     return;
   }
 
@@ -366,12 +719,16 @@ function mousePressed() {
 
 function doMove(u, q, r) {
   if (u.side !== state.active || u.acted) return log('该单位本回合已行动。');
-  const tile = reachable(u).find(t => t.q === q && t.r === r);
+  const tile = getReachableCached(u).find(t => t.q === q && t.r === r);
   if (!tile) return log('无法到达该格。');
-  u.q = q; u.r = r; u.mpLeft = tile.mp;
+  u.q = q;
+  u.r = r;
+  u.mpLeft = tile.mp;
   if (enemyZOC(q, r, opposite(u.side))) u.mpLeft = max(0, u.mpLeft - 1);
+  invalidateReachableCache();
   log(`${u.name} 机动至 (${q},${r})。`);
   updateObjectives();
+  markUIDirty();
 }
 
 function doAttack(a, d) {
@@ -392,10 +749,12 @@ function doAttack(a, d) {
 
   if (damage > 0) d.morale = max(3, d.morale - 1);
   if (counter > 0) a.morale = max(3, a.morale - 1);
+  invalidateReachableCache();
   cleanupDead();
   log(`${a.name} 攻击 ${d.name}：造成 ${damage}，反损 ${counter}（d6=${roll}）`);
   updateObjectives();
   checkGameEnd();
+  markUIDirty();
 }
 
 function doBombard(target) {
@@ -413,8 +772,10 @@ function doBombard(target) {
   } else {
     log(`${useAir ? '空袭' : '炮击'}偏离目标。`);
   }
+  invalidateReachableCache();
   cleanupDead();
   checkGameEnd();
+  markUIDirty();
 }
 
 function doFortify() {
@@ -422,7 +783,9 @@ function doFortify() {
   if (selected.acted) return log('该单位已行动。');
   selected.entrenched = min(2, selected.entrenched + 1);
   selected.acted = true;
+  invalidateReachableCache();
   log(`${selected.name} 构筑工事，工事等级 E${selected.entrenched}。`);
+  markUIDirty();
 }
 
 function doSupply() {
@@ -434,6 +797,7 @@ function doSupply() {
   selected.ammo = min(2, selected.ammo + 1);
   selected.morale = min(9, selected.morale + 1);
   log(`${selected.name} 完成补给，弹药与士气恢复。`);
+  markUIDirty();
 }
 
 function endTurn() {
@@ -443,7 +807,9 @@ function endTurn() {
   state.active = opposite(state.active);
   refreshSide();
   selected = null;
+  invalidateReachableCache();
   checkGameEnd();
+  markUIDirty();
 }
 
 function refreshSide() {
@@ -460,6 +826,7 @@ function refreshSide() {
     air: state.active === 'GER' && t % 2 === 1 ? 1 : 0,
     supply: 1
   };
+  invalidateReachableCache();
   log(`--- ${state.active} 第 ${state.turn} 回合 ---`);
 }
 
@@ -469,12 +836,19 @@ function runAI() {
   for (const u of aiUnits) {
     if (u.acted) continue;
     const adj = enemiesAdjacent(u);
-    if (adj.length) { doAttack(u, weakest(adj)); return; }
+    if (adj.length) {
+      doAttack(u, weakest(adj));
+      return;
+    }
     const obj = nearestUnfriendlyObjective(u.side, u.q, u.r);
     if (obj) {
       const options = reachable(u).filter(t => !unitAt(t.q, t.r));
       options.sort((a, b) => hexDist(a.q, a.r, obj.q, obj.r) - hexDist(b.q, b.r, obj.q, obj.r));
-      if (options[0]) { doMove(u, options[0].q, options[0].r); if (state.difficulty === 'hard') u.entrenched = min(1, u.entrenched + 1); return; }
+      if (options[0]) {
+        doMove(u, options[0].q, options[0].r);
+        if (state.difficulty === 'hard') u.entrenched = min(1, u.entrenched + 1);
+        return;
+      }
     }
     u.acted = true;
   }
@@ -488,8 +862,11 @@ function updateObjectives() {
     if (g && !s) o.owner = 'GER';
     if (s && !g) o.owner = 'SOV';
   });
-  state.vp = { GER:0, SOV:0 };
-  objectives.forEach(o => { if (o.owner) state.vp[o.owner] += o.vp; });
+  state.vp = { GER: 0, SOV: 0 };
+  objectives.forEach(o => {
+    if (o.owner) state.vp[o.owner] += o.vp;
+  });
+  markUIDirty();
 }
 
 function checkGameEnd() {
@@ -502,6 +879,7 @@ function checkGameEnd() {
     const result = scoreGER === scoreSOV ? '平局' : scoreGER > scoreSOV ? '德军胜' : '苏军胜';
     log(`战役结束：${result}（GER ${scoreGER} : SOV ${scoreSOV}）`);
   }
+  markUIDirty();
 }
 
 function cleanupDead() {
@@ -512,33 +890,94 @@ function cleanupDead() {
       log(`${u.name} 被击溃。`);
     }
   });
+  markUIDirty();
+}
+
+function setMode(nextMode) {
+  mode = nextMode;
+  document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('active', b.dataset.mode === nextMode));
+  markUIDirty();
 }
 
 function bindUI() {
+  document.addEventListener('contextmenu', e => e.preventDefault());
   document.getElementById('startBtn').addEventListener('click', startGame);
   document.querySelectorAll('[data-mode]').forEach(btn => {
     btn.addEventListener('click', () => {
-      mode = btn.dataset.mode;
-      document.querySelectorAll('[data-mode]').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
+      setMode(btn.dataset.mode);
       if (mode === 'FORTIFY') doFortify();
     });
   });
   document.getElementById('btnSupply').addEventListener('click', doSupply);
   document.getElementById('btnCenter').addEventListener('click', () => {
-    const pick = units.find(u => u.alive && u.side === state.active);
-    if (pick) selected = pick;
+    const pick = selected && selected.alive && selected.side === state.active
+      ? selected
+      : units.find(u => u.alive && u.side === state.active);
+    if (pick) {
+      selected = pick;
+      centerOnUnit(pick);
+      if (isMobileLayout()) {
+        panelState.right = true;
+        panelState.left = false;
+        updateMobilePanelClass();
+      }
+      markUIDirty();
+    }
   });
   document.getElementById('btnEnd').addEventListener('click', endTurn);
   document.getElementById('btnRestart').addEventListener('click', () => {
     document.getElementById('startOverlay').style.display = 'flex';
+    closeMobilePanels();
+    markUIDirty();
   });
+  document.getElementById('btnPanelLeft').addEventListener('click', () => togglePanel('left'));
+  document.getElementById('btnPanelRight').addEventListener('click', () => togglePanel('right'));
+  document.getElementById('btnFit').addEventListener('click', () => {
+    fitCameraToBattlefield();
+    markUIDirty();
+  });
+  window.addEventListener('resize', updateMobilePanelClass);
+}
+
+function isMobileLayout() {
+  return window.matchMedia('(max-width: 980px)').matches;
+}
+
+function togglePanel(which) {
+  if (!isMobileLayout()) return;
+  if (which === 'left') {
+    panelState.left = !panelState.left;
+    if (panelState.left) panelState.right = false;
+  } else {
+    panelState.right = !panelState.right;
+    if (panelState.right) panelState.left = false;
+  }
+  updateMobilePanelClass();
+}
+
+function closeMobilePanels() {
+  panelState.left = false;
+  panelState.right = false;
+  updateMobilePanelClass();
+}
+
+function updateMobilePanelClass() {
+  if (!isMobileLayout()) {
+    document.body.classList.remove('mobile-show-left');
+    document.body.classList.remove('mobile-show-right');
+    return;
+  }
+  document.body.classList.toggle('mobile-show-left', panelState.left);
+  document.body.classList.toggle('mobile-show-right', panelState.right);
 }
 
 function updatePanels() {
   const left = document.getElementById('leftPanel');
   const right = document.getElementById('rightPanel');
   const activeTitleClass = `titleSide-${state.active}`;
+  const mobileHint = isMobileLayout()
+    ? '手机操作：单指拖拽地图、双指缩放、轻点单位执行命令。'
+    : '桌面操作：滚轮缩放地图，点击按钮切换战术模式。';
 
   left.innerHTML = `
     <h2 class="${activeTitleClass}">第 ${state.turn} 回合 · ${state.active === 'GER' ? '德军行动' : '苏军行动'}</h2>
@@ -548,13 +987,20 @@ function updatePanels() {
     <div class="stat"><span>当前支援</span><span>空袭 ${state.support[state.active].air} / 炮击 ${state.support[state.active].arty}</span></div>
     <div class="stat"><span>补给动作</span><span>${state.support[state.active].supply}</span></div>
     <div class="stat"><span>玩家阵营</span><span>${state.playerSide}</span></div>
-    <p class="muted">规则要点：进入敌军 ZOC 会额外消耗 MP；无补给会持续降士气；目标点每回合实时计分。</p>
+    <div class="stat"><span>镜头缩放</span><span>x${camera.zoom.toFixed(2)}</span></div>
+    <p class="muted">${mobileHint}</p>
     <h3>目标点控制</h3>
     ${objectives.map(o => `<div class="stat"><span>${o.name} (+${o.vp})</span><span>${o.owner || '中立'}</span></div>`).join('')}
   `;
 
   if (!selected) {
-    right.innerHTML = `<h2>单位详情</h2><p class="muted">点击地图单位以查看详情。</p><h3>战报</h3><div class="log">${logs.slice(-10).map(l => `<div>${l}</div>`).join('')}</div>`;
+    right.innerHTML = `
+      <h2>单位详情</h2>
+      <p class="muted">点击地图单位以查看详情。</p>
+      <h3>战报</h3>
+      <div class="log">${logs.slice(-10).map(l => `<div>${l}</div>`).join('')}</div>
+    `;
+    uiDirty = false;
     return;
   }
   const t = mapData.get(key(selected.q, selected.r));
@@ -568,13 +1014,15 @@ function updatePanels() {
     <div class="stat"><span>工事</span><span>E${selected.entrenched}</span></div>
     <div class="stat"><span>地形</span><span>${t.terrain.name} DEF+${t.terrain.def}</span></div>
     <div class="stat"><span>坐标</span><span>(${selected.q}, ${selected.r})</span></div>
-    <h3>战报</h3><div class="log">${logs.slice(-10).map(l => `<div>${l}</div>`).join('')}</div>
+    <h3>战报</h3>
+    <div class="log">${logs.slice(-10).map(l => `<div>${l}</div>`).join('')}</div>
   `;
+  uiDirty = false;
 }
 
 function reachable(u) {
-  const best = new Map([[key(u.q,u.r), u.mpLeft]]);
-  const queue = [{q:u.q, r:u.r, mp:u.mpLeft}];
+  const best = new Map([[key(u.q, u.r), u.mpLeft]]);
+  const queue = [{ q: u.q, r: u.r, mp: u.mpLeft }];
   const out = [];
   while (queue.length) {
     const cur = queue.shift();
@@ -584,13 +1032,13 @@ function reachable(u) {
       if (unitAt(n.q, n.r) && !(n.q === u.q && n.r === u.r)) continue;
       const t = mapData.get(key(n.q, n.r)).terrain;
       if (t.cost >= 90) continue;
-      let cost = t.cost + (enemyZOC(n.q, n.r, opposite(u.side)) ? 1 : 0);
+      const cost = t.cost + (enemyZOC(n.q, n.r, opposite(u.side)) ? 1 : 0);
       const left = cur.mp - cost;
       if (left < 0) continue;
       const k = key(n.q, n.r);
       if (!best.has(k) || left > best.get(k)) {
         best.set(k, left);
-        queue.push({ q:n.q, r:n.r, mp:left });
+        queue.push({ q: n.q, r: n.r, mp: left });
       }
     }
   }
@@ -600,7 +1048,7 @@ function reachable(u) {
 function supplyConnected(u) {
   const sourceQ = u.side === 'GER' ? 0 : 12;
   const visited = new Set([key(u.q, u.r)]);
-  const queue = [{ q:u.q, r:u.r }];
+  const queue = [{ q: u.q, r: u.r }];
   while (queue.length) {
     const c = queue.shift();
     if (Math.abs(c.q - sourceQ) <= 1) return true;
@@ -624,66 +1072,97 @@ function enemyZOC(q, r, enemySide) {
 }
 
 function enemiesAdjacent(u) {
-  return neighbors(u.q, u.r).map(n => unitAt(n.q, n.r)).filter(v => v && v.side !== u.side && v.alive);
+  return neighbors(u.q, u.r)
+    .map(n => unitAt(n.q, n.r))
+    .filter(v => v && v.side !== u.side && v.alive);
 }
 
-function weakest(arr) { return [...arr].sort((a,b) => a.hp - b.hp)[0]; }
+function weakest(arr) {
+  return [...arr].sort((a, b) => a.hp - b.hp)[0];
+}
+
 function nearestUnfriendlyObjective(side, q, r) {
-  return [...objectives].filter(o => o.owner !== side).sort((a,b) => hexDist(q,r,a.q,a.r)-hexDist(q,r,b.q,b.r))[0];
+  return [...objectives]
+    .filter(o => o.owner !== side)
+    .sort((a, b) => hexDist(q, r, a.q, a.r) - hexDist(q, r, b.q, b.r))[0];
 }
 
-function unitAt(q, r) { return units.find(u => u.alive && u.q === q && u.r === r); }
-function inMap(q, r) { return q>=0 && q<COLS && r>=0 && r<ROWS && mapData.has(key(q,r)); }
-function key(q,r) { return `${q},${r}`; }
-function opposite(s) { return s === 'GER' ? 'SOV' : 'GER'; }
+function unitAt(q, r) {
+  return units.find(u => u.alive && u.q === q && u.r === r);
+}
+
+function inMap(q, r) {
+  return q >= 0 && q < COLS && r >= 0 && r < ROWS && mapData.has(key(q, r));
+}
+
+function key(q, r) {
+  return `${q},${r}`;
+}
+
+function opposite(s) {
+  return s === 'GER' ? 'SOV' : 'GER';
+}
 
 function neighbors(q, r) {
-  return [{q:q+1,r},{q:q+1,r:r-1},{q,r:r-1},{q:q-1,r},{q:q-1,r:r+1},{q,r:r+1}];
+  return [{ q: q + 1, r }, { q: q + 1, r: r - 1 }, { q, r: r - 1 }, { q: q - 1, r }, { q: q - 1, r: r + 1 }, { q, r: r + 1 }];
 }
 
 function hexToPixel(q, r) {
   return {
-    x: originX + hexSize * (Math.sqrt(3) * q + Math.sqrt(3)/2 * r),
+    x: originX + hexSize * (Math.sqrt(3) * q + (Math.sqrt(3) / 2) * r),
     y: originY + hexSize * (1.5 * r)
   };
 }
 
 function pixelToHex(px, py) {
-  const x = (px - originX) / hexSize;
-  const y = (py - originY) / hexSize;
-  const q = Math.sqrt(3)/3 * x - 1/3 * y;
-  const r = 2/3 * y;
+  const worldX = (px - camera.x) / camera.zoom;
+  const worldY = (py - camera.y) / camera.zoom;
+  const x = (worldX - originX) / hexSize;
+  const y = (worldY - originY) / hexSize;
+  const q = (Math.sqrt(3) / 3) * x - (1 / 3) * y;
+  const r = (2 / 3) * y;
   return cubeRound(q, r);
 }
 
 function cubeRound(q, r) {
-  let x = q, z = r, y = -x-z;
-  let rx = Math.round(x), ry = Math.round(y), rz = Math.round(z);
-  let dx = Math.abs(rx - x), dy = Math.abs(ry - y), dz = Math.abs(rz - z);
-  if (dx > dy && dx > dz) rx = -ry-rz;
-  else if (dy > dz) ry = -rx-rz;
-  else rz = -rx-ry;
-  return { q:rx, r:rz };
+  let x = q;
+  let z = r;
+  let y = -x - z;
+  let rx = Math.round(x);
+  let ry = Math.round(y);
+  let rz = Math.round(z);
+  const dx = Math.abs(rx - x);
+  const dy = Math.abs(ry - y);
+  const dz = Math.abs(rz - z);
+  if (dx > dy && dx > dz) rx = -ry - rz;
+  else if (dy > dz) ry = -rx - rz;
+  else rz = -rx - ry;
+  return { q: rx, r: rz };
 }
 
 function hexShape(cx, cy) {
   beginShape();
-  for (let i=0;i<6;i++) {
-    const a = TWO_PI * (i + .5) / 6;
+  for (let i = 0; i < 6; i++) {
+    const a = TWO_PI * (i + 0.5) / 6;
     vertex(cx + hexSize * cos(a), cy + hexSize * sin(a));
   }
   endShape(CLOSE);
 }
 
-function hexDist(q1,r1,q2,r2) {
-  let x1=q1,z1=r1,y1=-x1-z1;
-  let x2=q2,z2=r2,y2=-x2-z2;
-  return max(abs(x1-x2), abs(y1-y2), abs(z1-z2));
+function hexDist(q1, r1, q2, r2) {
+  const x1 = q1;
+  const z1 = r1;
+  const y1 = -x1 - z1;
+  const x2 = q2;
+  const z2 = r2;
+  const y2 = -x2 - z2;
+  return max(abs(x1 - x2), abs(y1 - y2), abs(z1 - z2));
 }
 
 function log(t) {
   logs.push(t);
   if (logs.length > 120) logs.shift();
+  markUIDirty();
 }
 </script>
 </body>
