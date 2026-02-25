@@ -1,9 +1,15 @@
+import type { Unit } from '../game/units/model';
 import type { Camera } from './camera';
-import type { Axial } from './hex/coords';
-import { pixelToAxial } from './hex/coords';
+import type { Axial, Point } from './hex/coords';
+import { axialToPixel, pixelToAxial } from './hex/coords';
 
 interface InputHandlers {
-  onSelectHex: (hex: Axial) => void;
+  onTap: (payload: { hex: Axial; unit: Unit | null }) => void;
+}
+
+interface InputOptions {
+  getUnits: () => Unit[];
+  getUnitHitRadius: () => number;
 }
 
 export class InputController {
@@ -16,7 +22,8 @@ export class InputController {
     private readonly canvas: HTMLCanvasElement,
     private readonly camera: Camera,
     private readonly hexSize: number,
-    private readonly handlers: InputHandlers
+    private readonly handlers: InputHandlers,
+    private readonly options: InputOptions
   ) {
     this.bind();
   }
@@ -84,7 +91,8 @@ export class InputController {
           y: event.clientY - rect.top
         });
         const hex = pixelToAxial(world, this.hexSize);
-        this.handlers.onSelectHex(hex);
+        const unit = this.hitTestUnit(world);
+        this.handlers.onTap({ hex, unit });
       }
     });
 
@@ -121,5 +129,23 @@ export class InputController {
 
     const distance = Math.hypot(event.clientX - origin.x, event.clientY - origin.y);
     return distance < 8;
+  }
+
+  private hitTestUnit(world: Point): Unit | null {
+    const units = this.options.getUnits();
+    const hitRadius = this.options.getUnitHitRadius();
+    let closest: Unit | null = null;
+    let closestDistance = Number.POSITIVE_INFINITY;
+
+    for (const unit of units) {
+      const center = axialToPixel(unit.pos, this.hexSize);
+      const distance = Math.hypot(world.x - center.x, world.y - center.y);
+      if (distance <= hitRadius && distance < closestDistance) {
+        closest = unit;
+        closestDistance = distance;
+      }
+    }
+
+    return closest;
   }
 }

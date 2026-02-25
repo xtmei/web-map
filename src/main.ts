@@ -2,7 +2,7 @@ import './style.css';
 import { Camera } from './engine/camera';
 import { InputController } from './engine/input';
 import { createHexDisc } from './engine/hex/grid';
-import { drawHexGrid } from './engine/hex/render';
+import { drawHexGrid, drawUnits, getUnitTokenRadius } from './engine/hex/render';
 import { CanvasSurface } from './engine/render/canvas';
 import { initialGameState } from './game/state';
 import { renderHud } from './ui/hud';
@@ -25,12 +25,27 @@ const gameState = structuredClone(initialGameState);
 camera.x = canvas.clientWidth / 2;
 camera.y = canvas.clientHeight / 2;
 
-new InputController(canvas, camera, HEX_SIZE, {
-  onSelectHex(hex) {
-    gameState.selectedHex = hex;
-    renderHud(hud, gameState);
+new InputController(
+  canvas,
+  camera,
+  HEX_SIZE,
+  {
+    onTap({ hex, unit }) {
+      if (unit) {
+        gameState.selectedUnitId = unit.id;
+        gameState.selectedHex = unit.pos;
+      } else {
+        gameState.selectedUnitId = null;
+        gameState.selectedHex = hex;
+      }
+      renderHud(hud, gameState);
+    }
+  },
+  {
+    getUnits: () => gameState.units,
+    getUnitHitRadius: () => getUnitTokenRadius(HEX_SIZE)
   }
-});
+);
 
 renderHud(hud, gameState);
 
@@ -38,11 +53,19 @@ function frame(): void {
   surface.clear();
   camera.apply(surface.ctx);
 
-  drawHexGrid(surface.ctx, hexes, HEX_SIZE, {
-    fill: 'rgba(70, 70, 70, 0.6)',
-    stroke: 'rgba(170, 170, 170, 0.45)',
-    lineWidth: 1.1
-  }, gameState.selectedHex);
+  drawHexGrid(
+    surface.ctx,
+    hexes,
+    HEX_SIZE,
+    {
+      fill: 'rgba(70, 70, 70, 0.6)',
+      stroke: 'rgba(170, 170, 170, 0.45)',
+      lineWidth: 1.1
+    },
+    gameState.selectedHex
+  );
+
+  drawUnits(surface.ctx, gameState.units, HEX_SIZE, gameState.selectedUnitId);
 
   requestAnimationFrame(frame);
 }

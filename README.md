@@ -1,6 +1,7 @@
 # Stalingrad Hex Wargame Prototype
 
-PR1 delivers a **Hex Playground** foundation using **Vite + Vanilla TypeScript + HTML Canvas 2D**.
+PR1 delivered a **Hex Playground** foundation using **Vite + Vanilla TypeScript + HTML Canvas 2D**.
+PR2 extends that playground with **unit tokens and selection**.
 
 ## Run
 
@@ -24,8 +25,23 @@ Implemented:
 - Tap/click hex selection with selected highlight
 - Top-left HUD showing selected `(q, r)` and controls hint
 
-Not in PR1:
-- Units, OOB, combat, terrain layers, scenario loading
+## PR2 Scope (Unit Tokens + Selection)
+
+Implemented:
+- Minimal `Unit` model with side/echelon/strength/morale/axial position
+- Demo units (Axis + Soviet) rendered as canvas tokens
+- Side-distinct token shapes (Axis square-ish, Soviet circle-ish)
+- Unit hit-testing and selection on click/tap
+- Selected unit highlight ring
+- Unit-first selection priority (unit tap selects unit and its hex)
+- Empty-hex tap clears selected unit and selects hex
+- HUD now shows selected hex plus detailed selected unit info
+
+Not in PR2:
+- Movement
+- Combat
+- OOB hierarchy UI
+- Unit bottom sheet panel
 
 ## PR1 Manual QA Checklist
 
@@ -35,34 +51,17 @@ Not in PR1:
 - [ ] **D) Select**: Click/tap a hex; selected hex gains highlight and remains selected while panning/zooming.
 - [ ] **E) HUD**: Verify HUD (top-left) updates selected axial coordinates and shows control hints.
 
-## Roadmap (Next PRs, not implemented)
+## PR2 Manual QA Checklist
 
-- **PR2: Unit tokens + selection**
-  - Load small demo unit list (hardcoded/JSON)
-  - Render unit tokens on hexes
-  - Tap unit selects it; show minimal unit tooltip/HUD
+1. App runs: `npm install && npm run dev`
+2. Units are visible on the grid (6–12 tokens).
+3. Clicking/tapping a unit selects it and highlights its token.
+4. HUD updates to show selected unit info.
+5. Clicking/tapping an empty hex clears unit selection and selects that hex.
+6. Pan/zoom still works on desktop and mobile touch without breaking selection.
 
-- **PR3: Unit panel (bottom sheet) + formation selection**
-  - Bottom sheet with selected unit placeholders
-  - Side selection (Axis/Soviet)
-  - Controllable formation selection (one Army)
+## PR3 Plan (not implemented)
 
-- **PR4: Movement + path preview**
-  - Action points and placeholder blocked terrain
-  - Tap destination previews path
-  - Confirm move button
-
-- **PR5: Combat resolution (simple)**
-  - Adjacent attack with CRT-like odds + d6
-  - Apply strength/morale losses
-
-- **PR6: Terrain layers + rivers/roads**
-  - Per-hex terrain affecting move/combat
-  - Minimal legend toggle
-
-- **PR7: OOB hierarchy navigation**
-  - Army → Corps → Division → Regiment → Battalion navigation UI
-
-- **PR8: Save/load + basic AI**
-  - Save/load game state via localStorage
-  - Simple AI movement toward objectives and favorable attacks
+- Add a mobile-friendly bottom sheet panel for selected unit details/actions.
+- Keep canvas interaction model from PR2 while surfacing unit metadata in the sheet.
+- Wire panel visibility to selected unit state (no movement/combat yet).
