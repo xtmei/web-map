@@ -1,0 +1,36 @@
+{
+  "id": "city_block_mvp",
+  "name": "城市街区MVP",
+  "objective": { "x": 30, "y": 30 },
+  "gridTemplate": {
+    "width": 60,
+    "height": 60,
+    "base": { "terrain": "open", "cover": 0, "height": 0, "blocked": false },
+    "features": [
+      { "x": 0, "y": 28, "w": 60, "h": 4, "terrain": "road", "cover": 0, "height": 0, "blocked": false },
+      { "x": 27, "y": 0, "w": 6, "h": 60, "terrain": "road", "cover": 0, "height": 0, "blocked": false },
+      { "x": 6, "y": 8, "w": 14, "h": 10, "terrain": "building", "cover": 2, "height": 2, "blocked": true },
+      { "x": 38, "y": 8, "w": 15, "h": 12, "terrain": "building", "cover": 2, "height": 2, "blocked": true },
+      { "x": 7, "y": 40, "w": 12, "h": 10, "terrain": "building", "cover": 2, "height": 2, "blocked": true },
+      { "x": 41, "y": 40, "w": 11, "h": 11, "terrain": "building", "cover": 2, "height": 2, "blocked": true },
+      { "x": 20, "y": 35, "w": 6, "h": 7, "terrain": "rubble", "cover": 1, "height": 1, "blocked": false },
+      { "x": 33, "y": 20, "w": 7, "h": 6, "terrain": "rubble", "cover": 1, "height": 1, "blocked": false },
+      { "x": 22, "y": 22, "w": 16, "h": 1, "terrain": "wall", "cover": 2, "height": 1, "blocked": true },
+      { "x": 22, "y": 37, "w": 16, "h": 1, "terrain": "wall", "cover": 2, "height": 1, "blocked": true }
+    ]
+  },
+  "units": [
+    { "id": "P1", "name": "1班", "side": "Player", "x": 4, "y": 26, "men": 9, "casualties": 0, "ammo": 10, "grenades": 2, "posture": "standing", "apMax": 6, "ap": 6, "suppression": 0, "alive": true },
+    { "id": "P2", "name": "2班", "side": "Player", "x": 6, "y": 33, "men": 9, "casualties": 0, "ammo": 10, "grenades": 2, "posture": "standing", "apMax": 6, "ap": 6, "suppression": 0, "alive": true },
+    { "id": "P3", "name": "3班", "side": "Player", "x": 8, "y": 29, "men": 9, "casualties": 0, "ammo": 10, "grenades": 1, "posture": "standing", "apMax": 6, "ap": 6, "suppression": 0, "alive": true },
+    { "id": "P4", "name": "4班", "side": "Player", "x": 10, "y": 24, "men": 9, "casualties": 0, "ammo": 10, "grenades": 1, "posture": "standing", "apMax": 6, "ap": 6, "suppression": 0, "alive": true },
+    { "id": "P5", "name": "5班", "side": "Player", "x": 9, "y": 36, "men": 9, "casualties": 0, "ammo": 10, "grenades": 2, "posture": "standing", "apMax": 6, "ap": 6, "suppression": 0, "alive": true },
+    { "id": "P6", "name": "6班", "side": "Player", "x": 12, "y": 31, "men": 9, "casualties": 0, "ammo": 10, "grenades": 2, "posture": "standing", "apMax": 6, "ap": 6, "suppression": 0, "alive": true },
+    { "id": "A1", "name": "红1班", "side": "AI", "x": 50, "y": 30, "men": 9, "casualties": 0, "ammo": 10, "grenades": 2, "posture": "standing", "apMax": 6, "ap": 6, "suppression": 0, "alive": true },
+    { "id": "A2", "name": "红2班", "side": "AI", "x": 48, "y": 26, "men": 9, "casualties": 0, "ammo": 10, "grenades": 2, "posture": "standing", "apMax": 6, "ap": 6, "suppression": 0, "alive": true },
+    { "id": "A3", "name": "红3班", "side": "AI", "x": 46, "y": 34, "men": 9, "casualties": 0, "ammo": 10, "grenades": 1, "posture": "standing", "apMax": 6, "ap": 6, "suppression": 0, "alive": true },
+    { "id": "A4", "name": "红4班", "side": "AI", "x": 52, "y": 24, "men": 9, "casualties": 0, "ammo": 10, "grenades": 1, "posture": "standing", "apMax": 6, "ap": 6, "suppression": 0, "alive": true },
+    { "id": "A5", "name": "红5班", "side": "AI", "x": 52, "y": 36, "men": 9, "casualties": 0, "ammo": 10, "grenades": 2, "posture": "standing", "apMax": 6, "ap": 6, "suppression": 0, "alive": true },
+    { "id": "A6", "name": "红6班", "side": "AI", "x": 47, "y": 40, "men": 9, "casualties": 0, "ammo": 10, "grenades": 2, "posture": "standing", "apMax": 6, "ap": 6, "suppression": 0, "alive": true }
+  ]
+}
