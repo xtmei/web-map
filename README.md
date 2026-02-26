@@ -4,6 +4,7 @@ PR1 delivered a **Hex Playground** foundation using **Vite + Vanilla TypeScript 
 PR2 extended that playground with **unit tokens and selection**.
 PR3 adds **mobile-first controls, controllable formation filtering, and a selected-unit bottom sheet**.
 PR4 adds **movement points, move mode, reachable range overlays, path preview, confirm/cancel move flow, and end turn MP reset**.
+PR5 adds a **combat MVP** with attack mode, adjacent target preview, d6 + odds CRT resolution, and combat log feedback.
 
 ## Run
 
@@ -78,7 +79,7 @@ Implemented:
 
 ## Roadmap
 
-- **PR5 (next):** combat resolution (CRT + d6) and optional opportunity fire.
+- **PR6 (next):** retreat movement rules, ZOC/stacking limits, and optional opportunity fire.
 
 
 ## PR4 Notes
@@ -97,3 +98,11 @@ Implemented:
 6. Unit cannot move across blocked river edges from `riverEdge` data.
 7. Tap **End Turn**: MP resets for currently controlled side units; move preview/path clears; pan/zoom/touch still works.
 8. Units outside selected formation remain non-interactable as before.
+
+
+## PR5 Notes
+
+- New **Attack** mode lets selected controllable units target adjacent enemy units.
+- Confirm Attack resolves combat using odds buckets (`1:2`, `1:1`, `2:1`, `3:1`) and a d6 CRT result (`DE`, `DR`, `EX`, `AR`).
+- Combat outcomes currently apply lightweight attrition/morale effects and write to HUD combat log.
+- This is intentionally a compact MVP to validate the combat loop before adding retreats/ZOC/op-fire.

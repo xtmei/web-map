@@ -10,17 +10,17 @@ import {
   getUnitTokenRadius
 } from './engine/hex/render';
 import { CanvasSurface } from './engine/render/canvas';
+import { applyCombatPreview, buildCombatPreview, canAttack } from './game/combat/resolve';
 import {
   applyScenarioToState,
   createInitialState,
   getAvailableFormations,
-  getSelectedUnit,
-  getUnitsForFormation
+  getSelectedUnit
 } from './game/state';
 import { computeReachable } from './game/movement/dijkstra';
 import { reconstructPath } from './game/movement/path';
 import { getScenarioOptions, loadScenario } from './game/scenarios/loader';
-import type { Side } from './game/units/model';
+import type { Side, Unit } from './game/units/model';
 import { createControls } from './ui/controls';
 import { renderHud } from './ui/hud';
 import { createUnitPanel } from './ui/panel';
@@ -59,6 +59,14 @@ function clearMovementState(exitMode: boolean): void {
   }
 }
 
+function clearCombatState(exitMode: boolean): void {
+  gameState.combatPreview = null;
+  gameState.combatMessage = null;
+  if (exitMode) {
+    gameState.combatMode = false;
+  }
+}
+
 function recomputeReachable(): void {
   if (!gameState.movementMode) {
     gameState.reachable = null;
@@ -84,6 +92,15 @@ function setSide(side: Side): void {
   gameState.selectedFormationId = formations[0]?.id ?? '';
   gameState.selectedUnitId = null;
   clearMovementState(true);
+  clearCombatState(true);
+}
+
+function getAttackableTargets(attacker: Unit | null): Unit[] {
+  if (!attacker || attacker.side !== gameState.selectedSide || attacker.formationId !== gameState.selectedFormationId) {
+    return [];
+  }
+
+  return gameState.units.filter((unit) => canAttack(attacker, unit));
 }
 
 function renderUi(): void {
@@ -97,9 +114,12 @@ function renderUi(): void {
     selectedFormationId: gameState.selectedFormationId,
     formations,
     movementMode: gameState.movementMode,
+    combatMode: gameState.combatMode,
     canMove:
       !!selectedUnit && selectedUnit.formationId === gameState.selectedFormationId && selectedUnit.mpRemaining > 0,
-    canConfirmMove: gameState.movePreview !== null
+    canAttack: !!selectedUnit && getAttackableTargets(selectedUnit).length > 0,
+    canConfirmMove: gameState.movePreview !== null,
+    canConfirmAttack: gameState.combatPreview !== null
   });
 
   panel.render(selectedUnit);
@@ -130,9 +150,25 @@ function toggleMoveMode(): void {
     return;
   }
 
+  clearCombatState(true);
   gameState.movementMode = !gameState.movementMode;
   gameState.movePreview = null;
   recomputeReachable();
+  renderUi();
+}
+
+function toggleCombatMode(): void {
+  const selectedUnit = getSelectedUnit(gameState.units, gameState.selectedUnitId);
+  if (!selectedUnit || getAttackableTargets(selectedUnit).length === 0) {
+    clearCombatState(true);
+    renderUi();
+    return;
+  }
+
+  clearMovementState(true);
+  gameState.combatMode = !gameState.combatMode;
+  gameState.combatPreview = null;
+  gameState.combatMessage = null;
   renderUi();
 }
 
@@ -157,6 +193,19 @@ function setMovePreviewForHex(q: number, r: number): void {
   };
 }
 
+function setCombatPreviewForUnit(defender: Unit): void {
+  const attacker = getSelectedUnit(gameState.units, gameState.selectedUnitId);
+  if (!attacker || !gameState.combatMode) {
+    return;
+  }
+
+  if (!canAttack(attacker, defender)) {
+    return;
+  }
+
+  gameState.combatPreview = buildCombatPreview(attacker, defender);
+}
+
 function confirmMove(): void {
   if (!gameState.movePreview) {
     return;
@@ -174,10 +223,34 @@ function confirmMove(): void {
   renderUi();
 }
 
+function confirmAttack(): void {
+  if (!gameState.combatPreview) {
+    return;
+  }
+
+  const result = applyCombatPreview(gameState.units, gameState.combatPreview);
+  gameState.combatMessage = result.summary;
+  gameState.combatLog.push(result.summary);
+  if (gameState.combatLog.length > 6) {
+    gameState.combatLog.shift();
+  }
+
+  const attacker = getSelectedUnit(gameState.units, result.preview.attackerId);
+  if (!attacker) {
+    gameState.selectedUnitId = null;
+  }
+
+  gameState.combatPreview = null;
+  gameState.combatMode = false;
+  renderUi();
+}
+
 function cancelMove(): void {
   gameState.movePreview = null;
   gameState.movementMode = false;
   gameState.reachable = null;
+  gameState.combatPreview = null;
+  gameState.combatMode = false;
   renderUi();
 }
 
@@ -189,6 +262,7 @@ function endTurn(): void {
   }
 
   clearMovementState(true);
+  clearCombatState(true);
   renderUi();
 }
 
@@ -204,19 +278,27 @@ const controls = createControls(controlsRootEl, {
     gameState.selectedFormationId = formationId;
     gameState.selectedUnitId = null;
     clearMovementState(true);
+    clearCombatState(true);
     renderUi();
   },
   onClearSelection() {
     gameState.selectedUnitId = null;
     gameState.selectedHex = null;
     clearMovementState(true);
+    clearCombatState(true);
     renderUi();
   },
   onToggleMoveMode() {
     toggleMoveMode();
   },
+  onToggleCombatMode() {
+    toggleCombatMode();
+  },
   onConfirmMove() {
     confirmMove();
+  },
+  onConfirmAttack() {
+    confirmAttack();
   },
   onCancelMove() {
     cancelMove();
@@ -229,6 +311,7 @@ const controls = createControls(controlsRootEl, {
 const panel = createUnitPanel(panelRootEl, () => {
   gameState.selectedUnitId = null;
   clearMovementState(true);
+  clearCombatState(true);
   renderUi();
 });
 
@@ -247,6 +330,13 @@ new InputController(
         return;
       }
 
+      if (gameState.combatMode && unit) {
+        setCombatPreviewForUnit(unit);
+        gameState.selectedHex = unit.pos;
+        renderUi();
+        return;
+      }
+
       if (unit) {
         gameState.selectedUnitId = unit.id;
         gameState.selectedHex = unit.pos;
@@ -256,11 +346,12 @@ new InputController(
       }
 
       clearMovementState(true);
+      clearCombatState(true);
       renderUi();
     }
   },
   {
-    getSelectableUnits: () => getUnitsForFormation(gameState.units, gameState.selectedFormationId),
+    getSelectableUnits: () => gameState.units,
     getUnitHitRadius: () => getUnitTokenRadius(HEX_SIZE)
   }
 );
