@@ -1,99 +1,78 @@
-# Stalingrad Hex Wargame Prototype
+# 斯大林格勒：钢铁战线指挥图（UI升级版）
 
-PR1 delivered a **Hex Playground** foundation using **Vite + Vanilla TypeScript + HTML Canvas 2D**.
-PR2 extended that playground with **unit tokens and selection**.
-PR3 adds **mobile-first controls, controllable formation filtering, and a selected-unit bottom sheet**.
-PR4 adds **movement points, move mode, reachable range overlays, path preview, confirm/cancel move flow, and end turn MP reset**.
+本版本把原先“按钮平铺”升级为**手机优先的兵棋指挥席**，保持硬核、干净、军事感的深色风格，并提供可演示的指挥交互框架。
 
-## Run
+## 本地预览
 
 ```bash
 npm install
 npm run dev
 ```
 
-Build production bundle:
+默认地址：`http://localhost:5173`
+
+## 打包与部署
 
 ```bash
 npm run build
+npm run preview
 ```
 
-## PR1 Scope (Hex Playground)
+构建产物在 `dist/`，可部署到任意静态站点（Nginx / GitHub Pages / Vercel 静态托管）。
 
-Implemented:
-- Fullscreen pointy-top axial hex grid (disc map, radius 21)
-- Pointer/touch drag panning
-- Wheel + pinch zoom centered on cursor/focus point with clamps
-- Tap/click hex selection with selected highlight
-- Top-left HUD showing selected `(q, r)` and controls hint
+## UI结构说明
 
-## PR2 Scope (Unit Tokens + Selection)
+### A. 三段式布局
 
-Implemented:
-- Minimal `Unit` model with side/echelon/strength/morale/axial position
-- Demo units (Axis + Soviet) rendered as canvas tokens
-- Side-distinct token shapes (Axis square-ish, Soviet circle-ish)
-- Unit hit-testing and selection on click/tap
-- Selected unit highlight ring
-- Unit-first selection priority (unit tap selects unit and its hex)
-- Empty-hex tap clears selected unit and selects hex
-- HUD now shows selected hex plus detailed selected unit info
+1. **Top Bar（固定）**
+   - 回合、当前阵营、AP、补给状态（通/断/危）
+   - 模式切换（浏览/指挥）、居中、日志、设置
+   - 居中支持短按/长按：
+     - 短按：居中到当前选中单位
+     - 长按：打开快速跳转（最近单位/关键节点/补给点，mock）
 
-## PR3 Scope (Controls + Formation Filter + Bottom Sheet)
+2. **Unit Panel（左侧/移动端半抽屉）**
+   - 单位树（集团军→军→师→团→营，mock层级）
+   - 筛选：可行动、缺补给、受损、已行动
+   - 搜索框
+   - 点选单位后：地图高亮 + Top Bar / Action Dock 同步刷新
 
-Implemented:
-- Mobile-friendly top controls (Axis/Soviet side toggle + formation dropdown + clear button)
-- Formation-aware unit control model (`formationId`, `formationName`)
-- Side switch auto-selects first formation for that side and clears selected unit
-- Only selected-formation units are selectable; others remain visible but disabled/greyed
-- Bottom sheet unit panel with unit details and derived structure placeholders
-- Tapping empty hex still clears selected unit and selects that hex
+3. **Action Dock（底部固定）**
+   - 只展示当前单位动作：机动/突击/火力/筑垒/补给
+   - 每个动作显示 AP 消耗
+   - 不可用动作置灰，点击/长按给出原因（缺AP、无补给、距离不够、地形限制等）
+   - 包含“回合结束 / 重置战区”
 
-## PR1 Manual QA Checklist
+### B. 地图交互框架
 
-- [ ] **A) Grid render**: Launch app and verify fullscreen canvas displays pointy-top hex map with substantial playable area.
-- [ ] **B) Pan**: Drag with mouse or one finger; map pans smoothly.
-- [ ] **C) Zoom**: Use wheel/trackpad pinch to zoom in/out and confirm zoom anchors around cursor/touch center and stays within sensible min/max.
-- [ ] **D) Select**: Click/tap a hex; selected hex gains highlight and remains selected while panning/zooming.
-- [ ] **E) HUD**: Verify HUD (top-left) updates selected axial coordinates and shows control hints.
+- **浏览模式/指挥模式**（误触保护）
+- 选中单位后可显示：
+  - 移动范围高亮（简化规则）
+  - 攻击圈/LOS圈开关（范围圈占位）
+- **动作二段式确认**：
+  1) 点击动作进入规划态
+  2) 地图点选目标后出现确认条（确认/取消）
+  3) 执行后显示 toast 并写入回合日志
 
-## PR2 Manual QA Checklist
+### C. 信息面板
 
-1. App runs: `npm install && npm run dev`
-2. Units are visible on the grid (6–12 tokens).
-3. Clicking/tapping a unit selects it and highlights its token.
-4. HUD updates to show selected unit info.
-5. Clicking/tapping an empty hex clears unit selection and selects that hex.
-6. Pan/zoom still works on desktop and mobile touch without breaking selection.
+- **战况面板**：VP、补给线状态、损失统计（卡片）
+- **单位卡**：编制、装备、状态、指挥链、AP已用/剩余
 
-## PR3 Manual QA Checklist
+## 代码组织
 
-1. `npm install && npm run dev` works.
-2. Top bar shows Side toggle + Formation dropdown.
-3. Switching Side updates Formation options and filters controllable units accordingly.
-4. Only units in the selected Formation are selectable; others are disabled/greyed.
-5. Selecting a controllable unit opens bottom sheet and shows correct info (name/side/echelon/strength/morale/pos).
-6. Tapping empty hex closes panel (unit deselected) and selects hex.
-7. Pan/zoom still works; UI clicks do not accidentally pan the map.
+- `src/main.ts`：应用装配、输入响应、地图渲染与 UI 刷新
+- `src/state/store.ts`：UI状态/动作可用性/日志/二段确认
+- `src/ui/topbar.ts`：顶部栏与模式/居中/设置/日志交互
+- `src/ui/panels.ts`：单位树、筛选、搜索、战况与单位卡
+- `src/ui/actions.ts`：底部动作条、动作禁用原因、确认条
+- `src/style.css`：统一军事风格视觉、移动端安全区、触屏尺寸规范
 
-## Roadmap
+## 可演示清单
 
-- **PR5 (next):** combat resolution (CRT + d6) and optional opportunity fire.
+- ✅ 选中单位 → 地图高亮与信息联动
+- ✅ 动作条按当前单位状态刷新（含禁用原因提示）
+- ✅ 二段确认（规划态 → 目标 → 确认）
+- ✅ 回合日志写入与 toast 反馈
+- ✅ 面板切换（战况/单位卡、日志、设置）
 
-
-## PR4 Notes
-
-- Units now have `mpMax` and `mpRemaining`. If missing in scenario `units.json`, defaults are: Battalion=6, Regiment=5, Division=4, all other echelons=4.
-- End Turn currently resets MP for all units on the currently selected side (single-player handoff style).
-- Cancel in move mode clears the preview and exits move mode without moving the unit.
-
-## PR4 Manual QA Checklist
-
-1. App runs: `npm install && npm run dev`
-2. Select a controllable unit: HUD/panel shows `mpMax/mpRemaining`.
-3. Tap **Move**: reachable hexes highlight.
-4. Tap a reachable hex: path preview appears and move cost is displayed in HUD.
-5. Tap **Confirm Move**: unit moves to destination and `mpRemaining` decreases by path cost.
-6. Unit cannot move across blocked river edges from `riverEdge` data.
-7. Tap **End Turn**: MP resets for currently controlled side units; move preview/path clears; pan/zoom/touch still works.
-8. Units outside selected formation remain non-interactable as before.
