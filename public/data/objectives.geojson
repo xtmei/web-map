@@ -1,0 +1,50 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "马马耶夫岗",
+        "type": "hill",
+        "vp": 5
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          44.53,
+          48.74
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "拖拉机厂",
+        "type": "industry",
+        "vp": 4
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          44.58,
+          48.77
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "伏尔加渡口",
+        "type": "crossing",
+        "vp": 3
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          44.66,
+          48.71
+        ]
+      }
+    }
+  ]
+}

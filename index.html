@@ -1,15 +1,65 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>Stalingrad Hex Wargame - PR3 Controls + Unit Panel</title>
+    <title>移动端战役地图 MVP 1.0</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
   </head>
   <body>
-    <canvas id="app-canvas" aria-label="Stalingrad hex map"></canvas>
-    <div id="controls-root" class="ui-layer"></div>
-    <div id="hud" class="hud"></div>
-    <div id="panel-root" class="ui-layer"></div>
+    <div id="app">
+      <header class="top-bar">
+        <span id="phase-label">阶段 1/8</span>
+        <select id="side-select" aria-label="阵营">
+          <option value="Soviet">Soviet</option>
+          <option value="Axis">Axis</option>
+        </select>
+        <span id="ap-label">0 AP</span>
+        <span id="supply-label">0/0 strained</span>
+        <button id="log-button">日志</button>
+      </header>
+
+      <main id="map" aria-label="战役地图"></main>
+
+      <section class="timeline">
+        <button id="play-button">播放</button>
+        <input id="time-slider" type="range" min="0" max="7" step="1" value="0" />
+        <span id="timeline-label">1942-07</span>
+      </section>
+
+      <article class="phase-card">
+        <h3 id="phase-title"></h3>
+        <p id="phase-description"></p>
+      </article>
+
+      <section id="bottom-sheet" class="bottom-sheet">
+        <div id="unit-summary" class="unit-summary"></div>
+        <div id="unit-details" class="unit-details"></div>
+      </section>
+
+      <nav class="fab-group">
+        <button id="fab-center">◎</button>
+        <div id="phase-jump-list" class="phase-jump-list">
+          <button data-phase="0">1942-07</button><button data-phase="1">1942-08</button>
+          <button data-phase="2">1942-09</button><button data-phase="3">1942-10</button>
+          <button data-phase="4">1942-11</button><button data-phase="5">1942-12</button>
+          <button data-phase="6">1943-01</button><button data-phase="7">1943-02</button>
+        </div>
+        <button id="fab-locate">⌖</button>
+        <button id="fab-endturn">回合结束</button>
+      </nav>
+    </div>
+
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

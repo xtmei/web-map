@@ -1,0 +1,194 @@
+[
+  {
+    "id": "sov_62_army",
+    "name": "第62集团军",
+    "side": "Soviet",
+    "echelon": "Army",
+    "lat": 48.74104,
+    "lon": 44.53204,
+    "strength": 79,
+    "equipment": [
+      "步兵",
+      "火炮"
+    ],
+    "parentId": "STAVKA",
+    "ap": 4,
+    "supply": "Stretched"
+  },
+  {
+    "id": "sov_13_guard",
+    "name": "第13近卫师",
+    "side": "Soviet",
+    "echelon": "Division",
+    "lat": 48.76594,
+    "lon": 44.57694,
+    "strength": 76,
+    "equipment": [
+      "步兵",
+      "火炮"
+    ],
+    "parentId": "sov_62_army",
+    "ap": 3,
+    "supply": "Stretched"
+  },
+  {
+    "id": "sov_95_div",
+    "name": "第95步兵师",
+    "side": "Soviet",
+    "echelon": "Division",
+    "lat": 48.71524,
+    "lon": 44.54624,
+    "strength": 79,
+    "equipment": [
+      "步兵",
+      "火炮"
+    ],
+    "parentId": "sov_62_army",
+    "ap": 3,
+    "supply": "Low"
+  },
+  {
+    "id": "sov_284_div",
+    "name": "第284步兵师",
+    "side": "Soviet",
+    "echelon": "Division",
+    "lat": 48.80126,
+    "lon": 44.64226,
+    "strength": 83,
+    "equipment": [
+      "步兵",
+      "火炮"
+    ],
+    "parentId": "sov_62_army",
+    "ap": 3,
+    "supply": "Low"
+  },
+  {
+    "id": "sov_35_guard",
+    "name": "第35近卫团",
+    "side": "Soviet",
+    "echelon": "Regiment",
+    "lat": 48.75616,
+    "lon": 44.64716,
+    "strength": 78,
+    "equipment": [
+      "步兵",
+      "火炮"
+    ],
+    "parentId": "sov_13_guard",
+    "ap": 5,
+    "supply": "Good"
+  },
+  {
+    "id": "axis_6_army",
+    "name": "第6集团军",
+    "side": "Axis",
+    "echelon": "Army",
+    "lat": 48.67593,
+    "lon": 44.26493,
+    "strength": 86,
+    "equipment": [
+      "步兵",
+      "火炮"
+    ],
+    "parentId": "OKH",
+    "ap": 4,
+    "supply": "Low"
+  },
+  {
+    "id": "axis_51_corps",
+    "name": "第51军",
+    "side": "Axis",
+    "echelon": "Corps",
+    "lat": 48.60594,
+    "lon": 44.23494,
+    "strength": 89,
+    "equipment": [
+      "步兵",
+      "火炮"
+    ],
+    "parentId": "axis_6_army",
+    "ap": 3,
+    "supply": "Good"
+  },
+  {
+    "id": "axis_14_panzer",
+    "name": "第14装甲师",
+    "side": "Axis",
+    "echelon": "Division",
+    "lat": 48.65267,
+    "lon": 44.31167,
+    "strength": 85,
+    "equipment": [
+      "坦克",
+      "机械化步兵"
+    ],
+    "parentId": "axis_51_corps",
+    "ap": 3,
+    "supply": "Low"
+  },
+  {
+    "id": "axis_24_panzer",
+    "name": "第24装甲师",
+    "side": "Axis",
+    "echelon": "Division",
+    "lat": 48.68832,
+    "lon": 44.31732,
+    "strength": 77,
+    "equipment": [
+      "坦克",
+      "机械化步兵"
+    ],
+    "parentId": "axis_51_corps",
+    "ap": 5,
+    "supply": "Stretched"
+  },
+  {
+    "id": "axis_389_div",
+    "name": "第389步兵师",
+    "side": "Axis",
+    "echelon": "Division",
+    "lat": 48.72135,
+    "lon": 44.29035,
+    "strength": 85,
+    "equipment": [
+      "步兵",
+      "火炮"
+    ],
+    "parentId": "axis_6_army",
+    "ap": 5,
+    "supply": "Stretched"
+  },
+  {
+    "id": "axis_71_reg",
+    "name": "第71掷弹兵团",
+    "side": "Axis",
+    "echelon": "Regiment",
+    "lat": 48.61882,
+    "lon": 44.34782,
+    "strength": 76,
+    "equipment": [
+      "步兵",
+      "火炮"
+    ],
+    "parentId": "axis_389_div",
+    "ap": 3,
+    "supply": "Low"
+  },
+  {
+    "id": "sov_138_div",
+    "name": "第138步兵师",
+    "side": "Soviet",
+    "echelon": "Division",
+    "lat": 48.68633,
+    "lon": 44.66733,
+    "strength": 80,
+    "equipment": [
+      "步兵",
+      "火炮"
+    ],
+    "parentId": "sov_62_army",
+    "ap": 3,
+    "supply": "Good"
+  }
+]
