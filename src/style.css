@@ -91,7 +91,7 @@ body {
   max-width: min(90vw, 380px);
   padding: 12px;
   border-radius: 12px;
-  background: rgba(8, 8, 8, 0.75);
+  background: linear-gradient(180deg, rgba(8, 8, 8, 0.88), rgba(12, 12, 12, 0.72));
   color: #f2f2f2;
   font-size: 0.95rem;
   line-height: 1.4;
@@ -244,9 +244,9 @@ body {
 .move-confirm {
   pointer-events: auto;
   position: fixed;
-  left: max(12px, env(safe-area-inset-left));
   right: max(12px, env(safe-area-inset-right));
-  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 120px);
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 108px);
+  width: min(360px, calc(100vw - 24px));
   display: none;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
@@ -269,4 +269,87 @@ body {
 .move-confirm button:disabled,
 .move-controls button:disabled {
   opacity: 0.45;
+}
+
+
+.mode-pill {
+  margin-left: auto;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(36, 36, 36, 0.85);
+  color: #d3d3d3;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.mode-pill.is-active {
+  background: rgba(52, 90, 122, 0.92);
+  color: #dcf1ff;
+  border-color: rgba(129, 194, 250, 0.75);
+}
+
+.hud__title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.hud__badge {
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  padding: 2px 8px;
+  font-size: 0.72rem;
+  color: #d0d0d0;
+  background: rgba(60, 60, 60, 0.7);
+  font-weight: 700;
+}
+
+.hud__badge--active {
+  color: #dff2ff;
+  background: rgba(50, 92, 125, 0.82);
+  border-color: rgba(138, 201, 255, 0.8);
+}
+
+.hud__section {
+  margin-bottom: 8px;
+  padding: 8px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.hud__help summary {
+  cursor: pointer;
+  font-size: 0.82rem;
+  color: #d3d3d3;
+}
+
+.unit-panel__summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 0 8px;
+}
+
+.unit-panel__summary span {
+  background: rgba(129, 169, 122, 0.16);
+  border: 1px solid rgba(177, 221, 168, 0.32);
+  border-radius: 8px;
+  padding: 6px;
+  font-size: 0.8rem;
+}
+
+@media (max-width: 640px) {
+  .mode-pill {
+    width: 100%;
+    margin-left: 0;
+    text-align: center;
+  }
+
+  .unit-panel__summary {
+    grid-template-columns: 1fr;
+  }
 }

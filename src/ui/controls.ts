@@ -44,6 +44,7 @@ export function createControls(root: HTMLElement, handlers: ControlsHandlers): C
         <select id="formation-select" aria-label="Formation"></select>
       </label>
       <button type="button" id="clear-selection">Clear</button>
+      <div id="mode-pill" class="mode-pill">Mode: Idle</div>
     </div>
     <div class="move-controls">
       <button type="button" id="toggle-move">Move</button>
@@ -65,6 +66,7 @@ export function createControls(root: HTMLElement, handlers: ControlsHandlers): C
   const confirmMoveButton = root.querySelector<HTMLButtonElement>('#confirm-move');
   const cancelMoveButton = root.querySelector<HTMLButtonElement>('#cancel-move');
   const moveConfirm = root.querySelector<HTMLDivElement>('.move-confirm');
+  const modePill = root.querySelector<HTMLDivElement>('#mode-pill');
 
   if (
     !scenarioSelect ||
@@ -76,7 +78,8 @@ export function createControls(root: HTMLElement, handlers: ControlsHandlers): C
     !endTurnButton ||
     !confirmMoveButton ||
     !cancelMoveButton ||
-    !moveConfirm
+    !moveConfirm ||
+    !modePill
   ) {
     throw new Error('Failed to create controls UI');
   }
@@ -118,6 +121,8 @@ export function createControls(root: HTMLElement, handlers: ControlsHandlers): C
 
       confirmMoveButton.disabled = !state.canConfirmMove;
       moveConfirm.classList.toggle('is-open', state.movementMode);
+      modePill.textContent = `Mode: ${state.movementMode ? 'Move' : 'Idle'}`;
+      modePill.classList.toggle('is-active', state.movementMode);
     }
   };
 }

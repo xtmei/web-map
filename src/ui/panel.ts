@@ -62,6 +62,12 @@ export function createUnitPanel(root: HTMLElement, onClose: () => void): UnitPan
           <div><dt>MP</dt><dd>${unit.mpRemaining}/${unit.mpMax}</dd></div>
           <div><dt>Position</dt><dd>q=${unit.pos.q}, r=${unit.pos.r}</dd></div>
         </dl>
+        <h3 class="unit-panel__subhead">Tactical summary</h3>
+        <div class="unit-panel__summary">
+          <span>可移动: <strong>${unit.mpRemaining} MP</strong></span>
+          <span>士气: <strong>${unit.morale >= 70 ? '稳定' : unit.morale >= 50 ? '一般' : '脆弱'}</strong></span>
+          <span>战力: <strong>${unit.strength >= 60 ? '强' : unit.strength >= 40 ? '中' : '弱'}</strong></span>
+        </div>
         <h3 class="unit-panel__subhead">Structure (placeholder)</h3>
         <ul class="unit-panel__list">
           <li>Companies: ${structure.companies}</li>

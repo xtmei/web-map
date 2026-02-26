@@ -281,7 +281,9 @@ function frame(): void {
       lineWidth: 1.1
     },
     gameState.selectedHex,
-    gameState.terrainByHex
+    gameState.terrainByHex,
+    gameState.roadByHex,
+    gameState.riverEdgesByHex
   );
 
   if (gameState.movementMode && gameState.reachable) {
