@@ -9,8 +9,11 @@ interface ControlsState {
   scenarios: ScenarioOption[];
   formations: FormationOption[];
   movementMode: boolean;
+  combatMode: boolean;
   canMove: boolean;
+  canAttack: boolean;
   canConfirmMove: boolean;
+  canConfirmAttack: boolean;
 }
 
 interface ControlsHandlers {
@@ -19,8 +22,10 @@ interface ControlsHandlers {
   onFormationChange: (formationId: string) => void;
   onClearSelection: () => void;
   onToggleMoveMode: () => void;
+  onToggleCombatMode: () => void;
   onConfirmMove: () => void;
   onCancelMove: () => void;
+  onConfirmAttack: () => void;
   onEndTurn: () => void;
 }
 
@@ -47,10 +52,12 @@ export function createControls(root: HTMLElement, handlers: ControlsHandlers): C
     </div>
     <div class="move-controls">
       <button type="button" id="toggle-move">Move</button>
+      <button type="button" id="toggle-combat">Attack</button>
       <button type="button" id="end-turn">End Turn</button>
     </div>
     <div class="move-confirm" aria-live="polite">
       <button type="button" id="confirm-move" class="move-confirm__confirm">Confirm Move</button>
+      <button type="button" id="confirm-attack" class="move-confirm__confirm">Confirm Attack</button>
       <button type="button" id="cancel-move" class="move-confirm__cancel">Cancel</button>
     </div>
   `;
@@ -61,8 +68,10 @@ export function createControls(root: HTMLElement, handlers: ControlsHandlers): C
   const formationSelect = root.querySelector<HTMLSelectElement>('#formation-select');
   const clearButton = root.querySelector<HTMLButtonElement>('#clear-selection');
   const moveButton = root.querySelector<HTMLButtonElement>('#toggle-move');
+  const combatButton = root.querySelector<HTMLButtonElement>('#toggle-combat');
   const endTurnButton = root.querySelector<HTMLButtonElement>('#end-turn');
   const confirmMoveButton = root.querySelector<HTMLButtonElement>('#confirm-move');
+  const confirmAttackButton = root.querySelector<HTMLButtonElement>('#confirm-attack');
   const cancelMoveButton = root.querySelector<HTMLButtonElement>('#cancel-move');
   const moveConfirm = root.querySelector<HTMLDivElement>('.move-confirm');
 
@@ -73,8 +82,10 @@ export function createControls(root: HTMLElement, handlers: ControlsHandlers): C
     !formationSelect ||
     !clearButton ||
     !moveButton ||
+    !combatButton ||
     !endTurnButton ||
     !confirmMoveButton ||
+    !confirmAttackButton ||
     !cancelMoveButton ||
     !moveConfirm
   ) {
@@ -87,8 +98,10 @@ export function createControls(root: HTMLElement, handlers: ControlsHandlers): C
   formationSelect.addEventListener('change', () => handlers.onFormationChange(formationSelect.value));
   clearButton.addEventListener('click', () => handlers.onClearSelection());
   moveButton.addEventListener('click', () => handlers.onToggleMoveMode());
+  combatButton.addEventListener('click', () => handlers.onToggleCombatMode());
   endTurnButton.addEventListener('click', () => handlers.onEndTurn());
   confirmMoveButton.addEventListener('click', () => handlers.onConfirmMove());
+  confirmAttackButton.addEventListener('click', () => handlers.onConfirmAttack());
   cancelMoveButton.addEventListener('click', () => handlers.onCancelMove());
 
   return {
@@ -116,8 +129,17 @@ export function createControls(root: HTMLElement, handlers: ControlsHandlers): C
       moveButton.classList.toggle('is-active', state.movementMode);
       moveButton.textContent = state.movementMode ? 'Moving…' : 'Move';
 
+      combatButton.disabled = !state.canAttack;
+      combatButton.classList.toggle('is-active', state.combatMode);
+      combatButton.textContent = state.combatMode ? 'Attacking…' : 'Attack';
+
       confirmMoveButton.disabled = !state.canConfirmMove;
-      moveConfirm.classList.toggle('is-open', state.movementMode);
+      confirmMoveButton.style.display = state.movementMode ? 'block' : 'none';
+
+      confirmAttackButton.disabled = !state.canConfirmAttack;
+      confirmAttackButton.style.display = state.combatMode ? 'block' : 'none';
+
+      moveConfirm.classList.toggle('is-open', state.movementMode || state.combatMode);
     }
   };
 }

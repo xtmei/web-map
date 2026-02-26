@@ -248,7 +248,7 @@ body {
   right: max(12px, env(safe-area-inset-right));
   bottom: calc(max(12px, env(safe-area-inset-bottom)) + 120px);
   display: none;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -269,4 +269,20 @@ body {
 .move-confirm button:disabled,
 .move-controls button:disabled {
   opacity: 0.45;
+}
+
+
+#toggle-combat.is-active {
+  background: rgba(115, 69, 48, 0.95);
+  border-color: rgba(255, 173, 128, 0.9);
+}
+
+.hud__combat {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(238, 194, 120, 0.72);
+  background: rgba(106, 73, 27, 0.55);
+  color: #ffe0ad;
+  font-weight: 600;
 }

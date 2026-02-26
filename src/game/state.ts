@@ -1,7 +1,8 @@
 import type { Axial } from '../engine/hex/coords';
 import type { HexDirection } from '../engine/hex/grid';
-import type { Side, Unit } from './units/model';
+import type { CombatPreview } from './combat/resolve';
 import type { ScenarioDefinition, TerrainType } from './scenarios/types';
+import type { Side, Unit } from './units/model';
 
 export interface FormationOption {
   id: string;
@@ -31,9 +32,13 @@ export interface GameState {
   roadByHex: Map<string, boolean>;
   riverEdgesByHex: Map<string, Set<HexDirection>>;
   movementMode: boolean;
+  combatMode: boolean;
   movePreview: MovePreview | null;
+  combatPreview: CombatPreview | null;
   reachable: ReachableState | null;
   errorMessage: string | null;
+  combatMessage: string | null;
+  combatLog: string[];
 }
 
 export function getAvailableFormations(units: Unit[], side: Side): FormationOption[] {
@@ -97,9 +102,13 @@ export function applyScenarioToState(state: GameState, definition: ScenarioDefin
   state.roadByHex = toRoadMap(definition);
   state.riverEdgesByHex = toRiverEdgeMap(definition);
   state.movementMode = false;
+  state.combatMode = false;
   state.movePreview = null;
+  state.combatPreview = null;
   state.reachable = null;
   state.errorMessage = null;
+  state.combatMessage = null;
+  state.combatLog = [];
 
   const formations = getAvailableFormations(state.units, state.selectedSide);
   state.selectedFormationId = formations[0]?.id ?? '';
@@ -118,8 +127,12 @@ export function createInitialState(): GameState {
     roadByHex: new Map(),
     riverEdgesByHex: new Map(),
     movementMode: false,
+    combatMode: false,
     movePreview: null,
+    combatPreview: null,
     reachable: null,
-    errorMessage: null
+    errorMessage: null,
+    combatMessage: null,
+    combatLog: []
   };
 }
