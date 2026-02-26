@@ -1,99 +1,88 @@
-# Stalingrad Hex Wargame Prototype
+# Mobile Campaign Map MVP 1.0
 
-PR1 delivered a **Hex Playground** foundation using **Vite + Vanilla TypeScript + HTML Canvas 2D**.
-PR2 extended that playground with **unit tokens and selection**.
-PR3 adds **mobile-first controls, controllable formation filtering, and a selected-unit bottom sheet**.
-PR4 adds **movement points, move mode, reachable range overlays, path preview, confirm/cancel move flow, and end turn MP reset**.
+移动端优先地图原型：首屏直接进入地图，支持 8 阶段时间轴播放、单位点选、单位卡、战线/控制区 GeoJSON 叠加。
 
-## Run
+## 本地预览
 
 ```bash
 npm install
 npm run dev
 ```
 
-Build production bundle:
+构建：
 
 ```bash
 npm run build
 ```
 
-## PR1 Scope (Hex Playground)
+## 功能说明
 
-Implemented:
-- Fullscreen pointy-top axial hex grid (disc map, radius 21)
-- Pointer/touch drag panning
-- Wheel + pinch zoom centered on cursor/focus point with clamps
-- Tap/click hex selection with selected highlight
-- Top-left HUD showing selected `(q, r)` and controls hint
+- **地图首屏**：Leaflet + OSM 底图，地图视图高度 >= 70% 视口。
+- **Top Bar**：阶段、阵营切换、简化 AP、补给摘要、日志按钮。
+- **时间轴**：`1942-07` 到 `1943-02`，支持拖动和播放/暂停。
+- **Bottom Sheet**：默认收起显示单位摘要；展开显示单位详情（编制/装备/状态/上级/AP）。
+- **FAB 组**：居中、定位单位、回合结束；长按居中按钮可弹阶段跳转列表。
+- **地图图层**：单位点位（简化 NATO SVG 样式）、战线/控制区（GeoJSON）、目标点（objectives）。
+- **移动端适配**：44px 触控热区、safe-area、横竖屏布局切换（横屏 sheet 侧栏化）。
+- **性能策略**：按缩放阈值过滤单位显示（低缩放仅 Army/Corps，高缩放显示全部）。
 
-## PR2 Scope (Unit Tokens + Selection)
+## 代码结构（模块化）
 
-Implemented:
-- Minimal `Unit` model with side/echelon/strength/morale/axial position
-- Demo units (Axis + Soviet) rendered as canvas tokens
-- Side-distinct token shapes (Axis square-ish, Soviet circle-ish)
-- Unit hit-testing and selection on click/tap
-- Selected unit highlight ring
-- Unit-first selection priority (unit tap selects unit and its hex)
-- Empty-hex tap clears selected unit and selects hex
-- HUD now shows selected hex plus detailed selected unit info
+- `src/main.ts`：应用入口与初始化。
+- `src/store/state.ts`：状态管理与派生数据。
+- `src/data-loader/`：数据类型与分阶段数据加载。
+- `src/map/map-view.ts`：Leaflet 地图、单位/战线/目标图层。
+- `src/ui/layout.ts`：Top Bar、Time Slider、Bottom Sheet、FAB 交互。
 
-## PR3 Scope (Controls + Formation Filter + Bottom Sheet)
+## 数据格式
 
-Implemented:
-- Mobile-friendly top controls (Axis/Soviet side toggle + formation dropdown + clear button)
-- Formation-aware unit control model (`formationId`, `formationName`)
-- Side switch auto-selects first formation for that side and clears selected unit
-- Only selected-formation units are selectable; others remain visible but disabled/greyed
-- Bottom sheet unit panel with unit details and derived structure placeholders
-- Tapping empty hex still clears selected unit and selects that hex
+### 1) `public/data/phases.json`
 
-## PR1 Manual QA Checklist
+阶段元数据数组：
 
-- [ ] **A) Grid render**: Launch app and verify fullscreen canvas displays pointy-top hex map with substantial playable area.
-- [ ] **B) Pan**: Drag with mouse or one finger; map pans smoothly.
-- [ ] **C) Zoom**: Use wheel/trackpad pinch to zoom in/out and confirm zoom anchors around cursor/touch center and stays within sensible min/max.
-- [ ] **D) Select**: Click/tap a hex; selected hex gains highlight and remains selected while panning/zooming.
-- [ ] **E) HUD**: Verify HUD (top-left) updates selected axial coordinates and shows control hints.
+```json
+[
+  {
+    "id": 1,
+    "label": "1942-07",
+    "title": "阶段1: ...",
+    "description": "...",
+    "range": "1942-07"
+  }
+]
+```
 
-## PR2 Manual QA Checklist
+### 2) `public/data/units_phase_01.json` ... `units_phase_08.json`
 
-1. App runs: `npm install && npm run dev`
-2. Units are visible on the grid (6–12 tokens).
-3. Clicking/tapping a unit selects it and highlights its token.
-4. HUD updates to show selected unit info.
-5. Clicking/tapping an empty hex clears unit selection and selects that hex.
-6. Pan/zoom still works on desktop and mobile touch without breaking selection.
+单位数组字段：
 
-## PR3 Manual QA Checklist
+- `id`: string
+- `name`: string
+- `side`: `Axis | Soviet`
+- `echelon`: `Army | Corps | Division | Regiment | Battalion`
+- `lat`, `lon`: number
+- `strength`: number
+- `equipment`: string[]
+- `parentId`: string
+- `ap`: number
+- `supply`: `Good | Stretched | Low`
 
-1. `npm install && npm run dev` works.
-2. Top bar shows Side toggle + Formation dropdown.
-3. Switching Side updates Formation options and filters controllable units accordingly.
-4. Only units in the selected Formation are selectable; others are disabled/greyed.
-5. Selecting a controllable unit opens bottom sheet and shows correct info (name/side/echelon/strength/morale/pos).
-6. Tapping empty hex closes panel (unit deselected) and selects hex.
-7. Pan/zoom still works; UI clicks do not accidentally pan the map.
+### 3) `public/data/frontline_phase_01.geojson` ... `frontline_phase_08.geojson`
 
-## Roadmap
+`FeatureCollection`，支持：
 
-- **PR5 (next):** combat resolution (CRT + d6) and optional opportunity fire.
+- `LineString`：战线
+- `Polygon`：控制区
 
+示例 `properties`：
 
-## PR4 Notes
+- `side`: `Axis | Soviet`
+- `name`: 图层名称
 
-- Units now have `mpMax` and `mpRemaining`. If missing in scenario `units.json`, defaults are: Battalion=6, Regiment=5, Division=4, all other echelons=4.
-- End Turn currently resets MP for all units on the currently selected side (single-player handoff style).
-- Cancel in move mode clears the preview and exits move mode without moving the unit.
+### 4) `public/data/objectives.geojson`
 
-## PR4 Manual QA Checklist
+关键目标点 `FeatureCollection<Point>`，`properties`：
 
-1. App runs: `npm install && npm run dev`
-2. Select a controllable unit: HUD/panel shows `mpMax/mpRemaining`.
-3. Tap **Move**: reachable hexes highlight.
-4. Tap a reachable hex: path preview appears and move cost is displayed in HUD.
-5. Tap **Confirm Move**: unit moves to destination and `mpRemaining` decreases by path cost.
-6. Unit cannot move across blocked river edges from `riverEdge` data.
-7. Tap **End Turn**: MP resets for currently controlled side units; move preview/path clears; pan/zoom/touch still works.
-8. Units outside selected formation remain non-interactable as before.
+- `name`
+- `type`
+- `vp`

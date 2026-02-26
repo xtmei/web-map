@@ -1,0 +1,71 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "side": "Axis",
+        "name": "前沿接触线"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            44.18,
+            48.782000000000004
+          ],
+          [
+            44.32,
+            48.742000000000004
+          ],
+          [
+            44.45,
+            48.712
+          ],
+          [
+            44.6,
+            48.692
+          ],
+          [
+            44.74,
+            48.662000000000006
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "side": "Soviet",
+        "name": "苏军控制区"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              44.55,
+              48.82
+            ],
+            [
+              44.82,
+              48.82
+            ],
+            [
+              44.82,
+              48.58
+            ],
+            [
+              44.55,
+              48.58
+            ],
+            [
+              44.55,
+              48.82
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}
