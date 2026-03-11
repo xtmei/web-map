@@ -1,0 +1,7 @@
+{
+  "id": "stalingrad_42_demo",
+  "name": "Stalingrad 1942 Demo",
+  "description": "Small demo layout around central Stalingrad sectors.",
+  "mapRadius": 21,
+  "defaultSide": "Axis"
+}
